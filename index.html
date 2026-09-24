@@ -1345,10 +1345,20 @@ window.__cs2UiScale = function () {
     (function () {
       var ls = document.getElementById('loadingscreen');
       if (!ls) return;
-      setTimeout(function () {
+      var start = performance.now();
+      var last = start, smooth = 0;
+      function ready() {
+        var now = performance.now();
+        // minimum 8s, wait for the game canvas, and for the main thread to go
+        // idle (4 consecutive quick frames) so clicks aren't swallowed by boot jank
+        if (now - start < 8000 || !document.querySelector('#game canvas')) { requestAnimationFrame(ready); return; }
+        var dt = now - last; last = now;
+        smooth = dt < 80 ? smooth + 1 : 0;
+        if (smooth < 4 && now - start < 30000) { requestAnimationFrame(ready); return; }
         ls.classList.add('hide');
         setTimeout(function () { if (ls.parentNode) ls.parentNode.removeChild(ls); }, 600);
-      }, 8000);
+      }
+      requestAnimationFrame(ready);
     })();
   </script>
   <div id="game"></div>
