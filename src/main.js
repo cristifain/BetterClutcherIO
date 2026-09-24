@@ -218,6 +218,7 @@ import {
   t as gt
 } from "./data-BdgATJBp.js";
 import { wp } from "./paint-system.js";
+import { buildCrosshair, updateCrosshair } from "./pcrossair.js";
 var _t = 0x2;
 var vt = class {
   constructor() {
@@ -28701,13 +28702,7 @@ var Nv = class e {
     }
     let e = Z("div", "hud");
     this["root"] = e;
-    let t = Z("div", "crosshair", e);
-    for (let e of ["n", "s", "e", "w"]) {
-      Z("div", null, t, __p_KGFS_MAIN_STR(0xe2db, 0xd) + e)
-    }
-    this["chOut"] = ["n", "s", "e", "w"]["map"](e => {
-      return Z("div", null, t, __p_KGFS_MAIN_STR(0xe2ed, 0xd) + e)
-    }), this["chEl"] = t, this["chInner"] = Array["from"](t["querySelectorAll"](__p_DWtt_STR_66(0xe2fc, 0x9)));
+    let t = buildCrosshair(Z, e, this);
     let n = Z("div", "hitmarkwrap", e);
     this["hmWrap"] = n;
     let r = Z("div", "hitmark", n);
@@ -31317,64 +31312,10 @@ var Nv = class e {
     let i = r > 0x0 ? 4.5 * (0x1 - Math["exp"](-r / 0x19)) : 0x0;
     let a = this["_scBlurT"] || 0x0;
     i = a + (i - a) * .3, this["_scBlurT"] = i, this["setScopeBlur"](i)
-  } ["updateCrosshair"]() {
-    let e = this["game"];
-    let t = this["chEl"];
-    if (!t) {
-      return
-    }
-    let n = this["_specEnt"]();
-    let r = n || e["weapons"];
-    if (!r || !(n || e["player"] && e["player"]["alive"]) || e["scoped"]) {
-      if (this["_chHid"] !== !0x0) {
-        this["_chHid"] = !0x0;
-        for (let e of this["chOut"]) {
-          e["style"]["opacity"] = "0"
-        }
-      }
-      e["scoped"] ? this["updateScopeBlur"]() : this["_scBlur"] && this["setScopeBlur"](0x0);
-      return
-    }
-    if (this["_scBlur"] && this["setScopeBlur"](0x0), this["_chHid"]) {
-      this["_chHid"] = !0x1;
-      for (let e of this["chOut"]) {
-        e["style"]["opacity"] = ""
-      }
-    }
-    let i = innerHeight * .5 / Math["tan"](e["baseFov"] * .5 * .0174533);
-    let a = (r["crosshairSpread"] ? r["crosshairSpread"]() : 0x0) * i;
-    a >= 0x0 || (a = 0x0), a > innerHeight && (a = innerHeight);
-    let o = this["_chR"] || 0x0;
-    a = o + (a - o) * .35, this["_chR"] = a;
-    let s = Math["max"](0x7, a);
-    let c = this["chOut"];
-    let l = n || e["player"];
-    let u = !l["onGround"] || Math["hypot"](l["vx"] || 0x0, l["vz"] || 0x0) > .6;
-    let d = (r["restingSpread"] ? r["restingSpread"]() : 0x0) * i;
-    let f = a > d + 1.5 || u || a > 0x8;
-    if (f !== this["_chShow"]) {
-      this["_chShow"] = f;
-      for (let e of c) {
-        e["style"]["opacity"] = f ? "" : "0"
-      }
-    }
-    f && (c[0x0]["style"]["transform"] = __p_KGFS_MAIN_STR(0x19e78, 0x12) + (-s - 0x7) + "px)", c[0x1]["style"]["transform"] = __p_KGFS_MAIN_STR(0x19e78, 0x12) + s + "px)", c[0x2]["style"]["transform"] = __p_KGFS_MAIN_STR(0x19e8b, 0xd) + (-s - 0x7) + __p_KGFS_MAIN_STR(0x19e9e, 0x9), c[0x3]["style"]["transform"] = __p_KGFS_MAIN_STR(0x19e8b, 0xd) + s + __p_KGFS_MAIN_STR(0x19e9e, 0x9));
-    let p = 0x0;
-    let m = 0x0;
-    if (e["chFollow"]) {
-      let e = (r["punchP"] || 0x0) * .0174533 - (r["shkP"] || 0x0);
-      let t = (r["punchY"] || 0x0) * .0174533 - (r["shkY"] || 0x0);
-      p = Math["tan"](t) * i, m = -Math["tan"](e) * i
-    }
-    if (p !== this["_chX"] || m !== this["_chY"]) {
-      this["_chX"] = p, this["_chY"] = m;
-      let e = __p_KGFS_MAIN_STR(0x19e8b, 0xd) + p + "px," + m + "px)";
-      t["style"]["transform"] = e, this["hmWrap"] && (this["hmWrap"]["style"]["transform"] = e)
-    }
   } ["update"](e) {
     this["buyOpen"] && (this["_buyKeys"](), this["refreshBuyMoney"]());
     let t = this["game"];
-    if (this["updateCrosshair"](), this["_buyHintT"] = (this["_buyHintT"] || 0x0) - e, this["_buyHintT"] <= 0x0) {
+    if (updateCrosshair(this), this["_buyHintT"] = (this["_buyHintT"] || 0x0) - e, this["_buyHintT"] <= 0x0) {
       this["_buyHintT"] = .2;
       let e = t["modeCtl"];
       let n = !!(e && t["player"]["alive"] && !this["buyOpen"] && e["canBuy"] && e["canBuy"](t["player"]));
