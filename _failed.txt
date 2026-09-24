@@ -1,0 +1,6 @@
+models/cs2/cases/crate_
+sounds/manifest.json
+textures/fx_
+sounds/
+textures/fx_tracer.png
+textures/scope_circle.png
