@@ -825,7 +825,7 @@ var rc = {
 };
 var ic = class {
   constructor(e) {
-    this["game"] = e, this["_leftHand"] = !0x1, this["_kind"] = null, this["scene"] = new o, this["camera"] = new Ue(0x3a, innerWidth / innerHeight, .01, 0x14), this["hemiL"] = new se(0xf6ecd8, 0x4e5a68, .5), this["scene"]["add"](this["hemiL"]), this["keyL"] = new d(0xffe9c4, .26), this["keyL"]["position"]["set"](.6, 0x1, .4), this["scene"]["add"](this["keyL"]), this["_shade"] = 0x0, this["root"] = new h, this["mirror"] = new h, this["mirror"]["name"] = __p_KGFS_MAIN_STR(0x4a8b, 0xe), this["scene"]["add"](this["mirror"]), this["mirror"]["add"](this["root"]), this["base"] = new g(.27, -.26, -.55), this["cache"] = {}, this["current"] = null, this["muzzleZ"] = -.5, this["muzzleY"] = .035, this["_mzV"] = new g, this["_mzF"] = new g, this["_mzW"] = new g, this["_mzQ"] = new F, this["bobT"] = 0x0, this["bobAmt"] = 0x0, this["_airT"] = 0x0, this["kickZ"] = 0x0, this["kickRX"] = 0x0, this["kickZV"] = 0x0, this["kickRXV"] = 0x0, this["kickRZV"] = 0x0, this["kickX"] = 0x0, this["kickXV"] = 0x0, this["kickY"] = 0x0, this["kickYV"] = 0x0, this["kickRY"] = 0x0, this["kickRYV"] = 0x0, this["swayX"] = 0x0, this["swayY"] = 0x0, this["prevYaw"] = 0x0, this["prevPitch"] = 0x0, this["reloadT"] = 0x0, this["reloadDur"] = 0x0, this["drawAnimT"] = 0x0, this["drawDur"] = .5, this["slashT"] = 0x0, this["slashHeavy"] = !0x1, this["throwT"] = 0x0, this["pinT"] = 0x0, this["landDip"] = 0x0, this["action"] = null, this["_actionT"] = 0x0, this["_defuseTool"] = null, this["flash"] = new Yo(this["scene"], {
+    this["game"] = e, this["_leftHand"] = !0x1, this["scene"] = new o, this["camera"] = new Ue(0x3a, innerWidth / innerHeight, .01, 0x14), this["hemiL"] = new se(0xf6ecd8, 0x4e5a68, .5), this["scene"]["add"](this["hemiL"]), this["keyL"] = new d(0xffe9c4, .26), this["keyL"]["position"]["set"](.6, 0x1, .4), this["scene"]["add"](this["keyL"]), this["_shade"] = 0x0, this["root"] = new h, this["mirror"] = new h, this["mirror"]["name"] = __p_KGFS_MAIN_STR(0x4a8b, 0xe), this["scene"]["add"](this["mirror"]), this["mirror"]["add"](this["root"]), this["base"] = new g(.27, -.26, -.55), this["cache"] = {}, this["current"] = null, this["muzzleZ"] = -.5, this["muzzleY"] = .035, this["_mzV"] = new g, this["_mzF"] = new g, this["_mzW"] = new g, this["_mzQ"] = new F, this["bobT"] = 0x0, this["bobAmt"] = 0x0, this["_airT"] = 0x0, this["kickZ"] = 0x0, this["kickRX"] = 0x0, this["kickZV"] = 0x0, this["kickRXV"] = 0x0, this["kickRZV"] = 0x0, this["kickX"] = 0x0, this["kickXV"] = 0x0, this["kickY"] = 0x0, this["kickYV"] = 0x0, this["kickRY"] = 0x0, this["kickRYV"] = 0x0, this["swayX"] = 0x0, this["swayY"] = 0x0, this["prevYaw"] = 0x0, this["prevPitch"] = 0x0, this["reloadT"] = 0x0, this["reloadDur"] = 0x0, this["drawAnimT"] = 0x0, this["drawDur"] = .5, this["slashT"] = 0x0, this["slashHeavy"] = !0x1, this["throwT"] = 0x0, this["pinT"] = 0x0, this["landDip"] = 0x0, this["action"] = null, this["_actionT"] = 0x0, this["_defuseTool"] = null, this["flash"] = new Yo(this["scene"], {
       ["depthTest"]: !0x0,
       ["full"]: (e["quality"] || "high") === "high"
     }), Ro();
@@ -888,7 +888,7 @@ var ic = class {
     };
     o["mesh"]["traverse"](e => {
       e["isMesh"] && (e["receiveShadow"] = !0x0), e["name"] === "offhand" ? this["_offhand"]["push"](e) : e["name"] === "mag" && !s(e) ? (c(e, !0x0), this["_mag"]["push"]([e, e["userData"]["_bp"]["clone"](), e["userData"]["_br"]["clone"]()])) : e["name"] === "bolt" ? (c(e), this["_bolt"]["push"]([e, e["userData"]["_bp"]["clone"]()])) : e["name"] === "slide" ? (c(e), this["_slide"]["push"]([e, e["userData"]["_bp"]["clone"]()])) : e["name"] === "pump" ? (c(e), this["_pump"]["push"]([e, e["userData"]["_bp"]["clone"]()])) : e["name"] === "lhand" && (c(e), this["_lhand"]["push"]([e, e["userData"]["_bp"]["clone"]()]))
-    }), this["_partsDirty"] = !0x1, this["_glint"] = o["mesh"]["getObjectByName"]("scopeGlint") || null, this["muzzleZ"] = o["muzzle"], this["muzzleY"] = o["muzzleY"] === void 0x0 ? .035 : o["muzzleY"], this["root"]["add"](this["current"]), this["_applyHandSide"](), this["drawAnimT"] = this["drawDur"] = t["draw"] || .5, this["reloadT"] = 0x0, this["slashT"] = 0x0, this["throwT"] = 0x0, this["inspectT"] = 0x0
+    }), this["_partsDirty"] = !0x1, this["_glint"] = o["mesh"]["getObjectByName"]("scopeGlint") || null, this["muzzleZ"] = o["muzzle"], this["muzzleY"] = o["muzzleY"] === void 0x0 ? .035 : o["muzzleY"], this["root"]["add"](this["current"]), this["drawAnimT"] = this["drawDur"] = t["draw"] || .5, this["reloadT"] = 0x0, this["slashT"] = 0x0, this["throwT"] = 0x0, this["inspectT"] = 0x0
   } ["inspect"]() {
     let e = this["game"]["weapons"];
     this["reloadT"] > 0x0 || this["slashT"] > 0x0 || this["throwT"] > 0x0 || this["drawAnimT"] > 0x0 || this["action"] || e && e["scopeLevel"] > 0x0 || e && e["grenadeCooking"] || (this["inspectT"] = this["inspectDur"] = 2.8)
@@ -917,11 +917,8 @@ var ic = class {
         e["life"] = 0x0, e["mesh"]["visible"] = !0x1, e["mesh"]["material"]["opacity"] = 0x0
       }
     }
-  } ["_applyHandSide"]() {
-    let e = this["_kind"] === "grenade" || this["_kind"] === "c4" || this["_kind"] === "zeus";
-    this["current"] && (this["current"]["position"]["x"] = e && this["_leftHand"] ? -this["base"]["x"] : 0x0)
   } ["setHand"](e) {
-    this["_leftHand"] = !!e, this["mirror"] && (this["mirror"]["scale"]["x"] = e ? -0x1 : 0x1), this["_applyHandSide"]()
+    this["_leftHand"] = !!e, this["mirror"] && (this["mirror"]["scale"]["x"] = e ? -0x1 : 0x1)
   } ["kick"](e) {
     this["inspectT"] = 0x0;
     let t = e["vmKick"] == null ? e["recoil"] ? e["recoil"]["v"] : .6 : e["vmKick"];
