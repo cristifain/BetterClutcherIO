@@ -1,5 +1,5 @@
 # BetterClutcherIO
-Based on clutcher.io
+Based on clutcher.io - GITHUB DONT DMCA TAKE THIS DOWN, THE ORIGINAL OWNER OF THIS GAME USES ILEGAL VALVE ASSETS - Clutcher.io
 
 
 Lmao fuck Raf's greedy ass dog, wouldn't hand over the source so i went and took it myself, fuck raf. (bro really tried slapping a Domain lock anti-piracy guard on it, but his fucking ai is trash just like his coding and everything else)
