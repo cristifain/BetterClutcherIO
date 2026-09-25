@@ -2021,8 +2021,19 @@ var Nv = class e {
         n["position"]["set"](t.x || 0, t.y || 0, t.z || 0), n["rotation"]["y"] = t.ry || 0, setTeamColor(n, t.team), game["scene"]["add"](n), markers.set(e, n), roster.set(e, { team: t.team, alive: (t.hp == null ? 100 : t.hp) > 0, hp: t.hp == null ? 100 : t.hp, kills: t.kills || 0, name: "P" + String(e)["slice"](-4) }), pushRoster()
       },
       applyRemoteUpdate: (e, t) => {
+        // self-heal: a state update ALWAYS guarantees a visible marker and a
+        // roster entry, even if the join/welcome event was missed (reconnect,
+        // scene rebuild, timing)
         let n = markers.get(e);
-        if (!n) return;
+        if (!n) {
+          n = marker(e);
+          setTeamColor(n, t.team);
+          n["position"]["set"](t.x || 0, t.y || 0, t.z || 0), n["rotation"]["y"] = t.ry || 0;
+          game["scene"]["add"](n), markers.set(e, n);
+          if (!roster.has(e)) roster.set(e, { team: t.team, alive: !0, hp: t.hp == null ? 100 : t.hp, kills: t.kills || 0, name: "P" + String(e)["slice"](-4) });
+          pushRoster();
+          try { console.log("[mm] materialized marker for", e) } catch {}
+        }
         // self-heal: map loads can rebuild the scene and detach our markers
         if (n.parent !== game["scene"]) game["scene"]["add"](n);
         if (!n.userData.got1) {
