@@ -1811,12 +1811,15 @@ var Nv = class e {
         return
       }
       // online: matchmake FIRST (independent of map loading), then enter the
-      // world with zero bots. startGame ends in the native team-select.
+      // world with zero bots. Online matches run the continuous-respawn
+      // deathmatch controller: defusal rounds are simulated locally per client
+      // and cannot stay in sync between players yet.
       try {
         window.__clutcherOnlineMatch = !0
       } catch {}
       this["_mmOnlineInit"]();
       let g = this["_mmNet"];
+      i = "dm";
       g.requestMatch(r)["catch"](e => {
         try {
           console.error("[matchmaking]", e)
@@ -2000,18 +2003,26 @@ var Nv = class e {
       camera: game["camera"],
       getPlayerTransform: () => {
         let e = game["player"];
-        return { x: e["x"], y: e["y"], z: e["z"], ry: e["yaw"], pitch: e["pitch"], onGround: e["onGround"], team: e["team"] }
+        return { x: e["x"], y: e["y"], z: e["z"], ry: e["yaw"], pitch: e["pitch"], onGround: e["onGround"], team: e["team"], kills: e["kills"] || 0 }
       },
+      canSendState: () => game["state"] === "playing" && !!game["player"]["alive"],
       spawnRemotePlayer: (e, t) => {
         let n = marker(e);
-        n["position"]["set"](t.x || 0, t.y || 0, t.z || 0), n["rotation"]["y"] = t.ry || 0, setTeamColor(n, t.team), game["scene"]["add"](n), markers.set(e, n), roster.set(e, { team: t.team, alive: (t.hp == null ? 100 : t.hp) > 0, hp: t.hp == null ? 100 : t.hp, name: "P" + String(e)["slice"](-4) }), pushRoster()
+        n["position"]["set"](t.x || 0, t.y || 0, t.z || 0), n["rotation"]["y"] = t.ry || 0, setTeamColor(n, t.team), game["scene"]["add"](n), markers.set(e, n), roster.set(e, { team: t.team, alive: (t.hp == null ? 100 : t.hp) > 0, hp: t.hp == null ? 100 : t.hp, kills: t.kills || 0, name: "P" + String(e)["slice"](-4) }), pushRoster()
       },
       applyRemoteUpdate: (e, t) => {
         let n = markers.get(e);
         n && (n["position"]["set"](t.x, t.y, t.z), n["rotation"]["y"] = t.ry || 0, t.team && n["userData"]["team"] !== t.team && (n["userData"]["team"] = t.team, setTeamColor(n, t.team)));
         let r = roster.get(e);
-        if (r && t.team && r.team !== t.team) {
-          r.team = t.team, pushRoster()
+        if (r) {
+          let i = !1;
+          if (t.team && r.team !== t.team) {
+            r.team = t.team, i = !0
+          }
+          if (t.kills != null && r.kills !== t.kills) {
+            r.kills = t.kills, i = !0
+          }
+          i && pushRoster()
         }
       },
       despawnRemotePlayer: e => {

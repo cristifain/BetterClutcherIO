@@ -173,10 +173,10 @@ function openRemotes(list) {
     remotes.set(p.id, {
       x: p.x || 0, y: p.y || 0, z: p.z || 0, ry: p.ry || 0,
       tx: p.x || 0, ty: p.y || 0, tz: p.z || 0, ttry: p.ry || 0,
-      hp: p.hp == null ? 100 : p.hp, team: p.team
+      hp: p.hp == null ? 100 : p.hp, team: p.team, kills: p.kills || 0
     });
     try {
-      opts.spawnRemotePlayer(p.id, { x: p.x || 0, y: p.y || 0, z: p.z || 0, ry: p.ry || 0, hp: p.hp == null ? 100 : p.hp, team: p.team })
+      opts.spawnRemotePlayer(p.id, { x: p.x || 0, y: p.y || 0, z: p.z || 0, ry: p.ry || 0, hp: p.hp == null ? 100 : p.hp, team: p.team, kills: p.kills || 0 })
     } catch {}
   }
 }
@@ -242,6 +242,7 @@ function handleMsg(m) {
       isNum(m.z) && (r.tz = m.z);
       isNum(m.ry) && (r.ttry = m.ry);
       if (m.tm === "CT" || m.tm === "T") r.team = m.tm;
+      if (isNum(m.k)) r.kills = m.k;
       break
     }
     case "sh": {
@@ -296,6 +297,12 @@ function handleMsg(m) {
 // ---- 20Hz state send (sub-tick: real client timestamp per update) ----
 function sendState() {
   if (!isConnected() || !opts.getPlayerTransform) return;
+  // only send while actually in the world: team-select / death positions are
+  // meaningless and would trip the movement validation
+  if (opts.canSendState && !opts.canSendState()) {
+    lastSent = null;
+    return
+  }
   let t = opts.getPlayerTransform() || {};
   let now = performance.now();
   let dt = lastSent ? now - lastSentT : SEND_MS;
@@ -307,7 +314,7 @@ function sendState() {
     return
   }
   lastSent = { x: t.x, y: t.y, z: t.z }, lastSentT = now;
-  send({ t: "s", x: t.x, y: t.y, z: t.z, ry: t.ry, tm: t.team, vt: now })
+  send({ t: "s", x: t.x, y: t.y, z: t.z, ry: t.ry, tm: t.team, k: t.kills, vt: now })
 }
 
 export function sendShot(ox, oy, oz, dx, dy, dz) {
@@ -346,7 +353,7 @@ function frame(now) {
       r.ry += clamp(angDiff(r.ry, r.ttry), -8 * dt, 8 * dt) // yaw wrap-around safe
     }
     try {
-      opts.applyRemoteUpdate(r.id, { x: r.x, y: r.y, z: r.z, ry: r.ry, hp: r.hp, team: r.team })
+      opts.applyRemoteUpdate(r.id, { x: r.x, y: r.y, z: r.z, ry: r.ry, hp: r.hp, team: r.team, kills: r.kills || 0 })
     } catch {}
   }
   // viewmodel: bob/sway/recoil from the local player's transform rate
