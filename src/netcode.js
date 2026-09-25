@@ -172,6 +172,7 @@ function openRemotes(list) {
   for (let p of list || []) {
     if (!p || p.id == null || p.id === myId || remotes.has(p.id)) continue;
     remotes.set(p.id, {
+      id: p.id,
       x: p.x || 0, y: p.y || 0, z: p.z || 0, ry: p.ry || 0,
       tx: p.x || 0, ty: p.y || 0, tz: p.z || 0, ttry: p.ry || 0,
       hp: p.hp == null ? 100 : p.hp, team: p.team, kills: p.kills || 0
@@ -225,7 +226,7 @@ function handleMsg(m) {
     }
     case "join": {
       if (m.id == null || m.id === myId || remotes.has(m.id)) break;
-      remotes.set(m.id, { x: m.x || 0, y: m.y || 0, z: m.z || 0, ry: m.ry || 0, tx: m.x || 0, ty: m.y || 0, tz: m.z || 0, ttry: m.ry || 0, hp: 100, team: m.tm });
+      remotes.set(m.id, { id: m.id, x: m.x || 0, y: m.y || 0, z: m.z || 0, ry: m.ry || 0, tx: m.x || 0, ty: m.y || 0, tz: m.z || 0, ttry: m.ry || 0, hp: 100, team: m.tm });
       try {
         opts.spawnRemotePlayer(m.id, { x: m.x || 0, y: m.y || 0, z: m.z || 0, ry: m.ry || 0, hp: 100, team: m.tm })
       } catch {}
@@ -350,7 +351,7 @@ function frame(now) {
   lastFrame = now;
   if (!connected) return;
   // interpolate every remote toward its latest sub-tick target (~15 u/s)
-  for (let r of remotes.values()) {
+  for (let [rid, r] of remotes) {
     let d = Math.hypot(r.tx - r.x, r.ty - r.y, r.tz - r.z);
     if (d > 8) {
       // server jump (spawn/respawn/teleport correction): snap
@@ -363,7 +364,8 @@ function frame(now) {
       r.ry += clamp(angDiff(r.ry, r.ttry), -8 * dt, 8 * dt) // yaw wrap-around safe
     }
     try {
-      opts.applyRemoteUpdate(r.id, { x: r.x, y: r.y, z: r.z, ry: r.ry, hp: r.hp, team: r.team, kills: r.kills || 0 })
+      // pass the MAP KEY (rid) - remote objects are keyed by id
+      opts.applyRemoteUpdate(rid, { x: r.x, y: r.y, z: r.z, ry: r.ry, hp: r.hp, team: r.team, kills: r.kills || 0 })
     } catch {}
   }
   // viewmodel: bob/sway/recoil from the local player's transform rate

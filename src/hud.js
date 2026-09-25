@@ -2396,15 +2396,16 @@ var Nv = class e {
     } else {
       let t = 0x0;
       let n = 0x0;
-      for (let r of e["allEntities"]()) {
-        r["team"] === "CT" ? t += r["kills"] : n += r["kills"]
+      for (let r of [...e["allEntities"](), ...(e["onlinePlayers"] || [])]) {
+        r["team"] === "CT" ? t += r["kills"] || 0 : n += r["kills"] || 0
       }
       let r = Math["max"](0x0, e["roundTimeLeft"]);
       i = __p_KGFS_MAIN_STR(0x17e2f, 0x194) + Math["floor"](r / 0x3c) + ":" + Math["floor"](r % 0x3c)["toString"]()["padStart"](0x2, "0") + __p_KGFS_MAIN_STR(0x17bd4, 0xa7) + t + __p_KGFS_MAIN_STR(0x17c7f, 0x7d) + n + __p_KGFS_MAIN_STR(0x17fc4, 0x25)
     }
     if (i !== this["_sbHTML"] && (this["_sbHTML"] = i, this["scorebar"]["innerHTML"] = i));
-    // team alive counts refresh every frame (players join/die mid-match)
-    if (this["avCTCount"] && e["modeCtl"]) {
+    // team alive counts refresh every frame (players join/die mid-match);
+    // works with AND without a modeCtl (dm has none)
+    if (this["avCTCount"]) {
       let t = 0x0;
       let n = 0x0;
       for (let r of [...e["allEntities"](), ...(e["onlinePlayers"] || [])]) {
