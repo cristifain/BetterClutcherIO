@@ -1785,8 +1785,14 @@ var Nv = class e {
       let n = root.querySelector(".map-col.sel");
       let r = n ? n.dataset.map : "dusker";
       let i = read("clutcher_mode", "defusal");
-      let a = read("clutcher_cat", "matchmaking") === "practice";
-      goBtn.classList.add("starting"), goStatus && goStatus.classList.add("show");
+      // the ACTIVE TAB is the source of truth (not localStorage) - whichever
+      // category you see highlighted is the one GO executes
+      let a = (root.querySelector(".cat-tab.active") || {})["dataset"] ? root.querySelector(".cat-tab.active").dataset.mmcat === "practice" : read("clutcher_cat", "matchmaking") === "practice";
+      goBtn.classList.add("starting");
+      goStatus && (goStatus.textContent = a ? "STARTING MATCH..." : "ENTERING SERVER...", goStatus.classList.add("show"));
+      try {
+        console.log("[mm] GO " + (a ? "practice" : "online") + " map=" + r + " mode=" + i)
+      } catch {}
       let o = () => {
         goBtn.classList.remove("starting"), goStatus && goStatus.classList.remove("show")
       };
