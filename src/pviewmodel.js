@@ -945,6 +945,9 @@ var ic = class {
       let u = a && a["muzzleQuat"] ? a["muzzleQuat"](this["_mzQ"], this["_twinLeft"]) : null;
       this["flash"]["emit"](s, c, l, this["_mzF"]["x"], this["_mzF"]["y"], this["_mzF"]["z"], e["id"], !0x0, !0x0, u)
     }
+    if (n === "pistol" || n === "smg" || n === "rifle" || n === "mg" || n === "shotgun" || n === "sniper") {
+      pvmShotHook && pvmShotHook(e)
+    }
   } ["reload"](e) {
     this["reloadT"] = this["reloadDur"] = Math["max"](.5, e), this["_seated"] = !0x1
   } ["slash"](e) {
@@ -1247,6 +1250,14 @@ export { Qs, nc, rc, Ms, ec, ic };
 //   the local player spawns into an online match.
 // ============================================================================
 
+// online shot hook: hud.js subscribes via onGameShot(fn); fn receives the
+// weapon def once per gun shot (kick runs exactly once per fired round)
+var pvmShotHook = null;
+
+function onGameShot(e) {
+  pvmShotHook = e
+}
+
 var pvm = {
   root: null,
   camera: null,
@@ -1325,4 +1336,4 @@ function setViewModelVisible(v) {
   pvm.visible = !!v, pvm.root && (pvm.root["visible"] = pvm.visible)
 }
 
-export { initViewModel, updateViewModel, getViewModel, setViewModelVisible };
+export { initViewModel, updateViewModel, getViewModel, setViewModelVisible, onGameShot };

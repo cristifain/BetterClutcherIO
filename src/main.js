@@ -29483,7 +29483,7 @@ window["game"] = new class {
     let {
       ["botCount"]: n, ["difficulty"]: r
     } = this["_pending"];
-    e = this["_chosenTeam"] || e, this["player"]["team"] = e, this["viewmodel"]["setTeam"](e), this["hud"]["root"]["classList"]["toggle"](__p_KGFS_MAIN_STR(0xd5d7, 0x9), e === "CT"), this["hud"]["root"]["classList"]["toggle"](__p_KGFS_MAIN_STR(0xd5e4, 0x8), e === "T"), this["botMgr"]["setup"](n, r, e), vh(this), this["weapons"] = new Fo(this), this["weapons"]["give"](Jm(e)), this["_dropProto"] ||= new Map;
+    e = this["_chosenTeam"] || e, this["player"]["team"] = e, this["viewmodel"]["setTeam"](e), this["hud"]["root"]["classList"]["toggle"](__p_KGFS_MAIN_STR(0xd5d7, 0x9), e === "CT"), this["hud"]["root"]["classList"]["toggle"](__p_KGFS_MAIN_STR(0xd5e4, 0x8), e === "T"), this["botMgr"]["setup"](window.__clutcherOnlineMatch ? 0 : n, r, e), vh(this), this["weapons"] = new Fo(this), this["weapons"]["give"](Jm(e)), this["_dropProto"] ||= new Map;
     let i = (e, t) => {
       return this["warmDropProto"](e, t)
     };

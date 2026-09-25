@@ -6,7 +6,10 @@
 // main.js bindings are referenced only at runtime, never during module evaluation).
 import { a as ct, n as ft, s as ht, t as gt } from "./data-BdgATJBp.js";
 import { applySniperWidth, buildCrosshair, updateCrosshair, xhairHitEnabled } from "./pcrossair.js";
-import { A as t } from "./three-B50Y55N1.js";
+import { A as t, A as mmCyl, H as mmGroup, Ht as mmVec, it as mmBasic, kt as mmSphere, rt as mmMesh, ct as mmStdMat } from "./three-B50Y55N1.js";
+import { initMultiplayer, requestMatch } from "./netcode.js";
+import { onGameShot } from "./pviewmodel.js";
+import { rayPointDist } from "./shared.js";
 import { $m, Ar, Av, Ba, Bm, Cr, Cs, Cv, Dr, Dv, Er, Ev, Fm, Fu, Gm, H, Iu, Km, Lu, Mo, Mu, Mv, Nu, Ov, Pu, Qg, Ru, Sv, Tr, Tv, Um, V, V_, Va, Xm, Z, __p_KGFS_MAIN_STR, __p_V5bL_array, __p_nino_bufferToString, _s, as, br, bv, eh, gs, ju, jv, kr, ku, kv, ps, qm, th, wv, xr, xv, yr, ys, zm } from "./main.js";
 
 var Nv = class e {
@@ -1722,7 +1725,7 @@ var Nv = class e {
       store("clutcher_cat", e);
       for (let t of catTabs) t.classList.toggle("active", t.dataset.mmcat === e);
       let t = e === "practice";
-      botDiffWrap.classList.toggle("visible", t), botsWrap.classList.toggle("visible", t), goBtn.classList.toggle("disabled", !t)
+      botDiffWrap.classList.toggle("visible", t), botsWrap.classList.toggle("visible", t)
     };
     for (let t of catTabs) t.addEventListener("click", () => {
       setCat(t.dataset.mmcat), click()
@@ -1771,23 +1774,40 @@ var Nv = class e {
       setMap(t.dataset.map), click()
     });
 
-    // ---- GO (matchmaking does nothing; practice starts a bot match)
+    // ---- GO: practice starts a local bot match; matchmaking joins an online
+    // server running the SELECTED map (map-aware matchmaking) with zero bots
     let goStatus = q("#mmGoStatus");
     goBtn.addEventListener("click", () => {
-      if (goBtn.classList.contains("disabled") || read("clutcher_cat", "matchmaking") !== "practice") {
-        toast("MATCHMAKING IS NOT AVAILABLE - USE PRACTICE"), click();
-        return
-      }
-      if (game.state !== "menu" || game._starting) return;
-      goBtn.classList.add("starting"), goStatus && goStatus.classList.add("show");
+      if (goBtn.classList.contains("starting") || game.state !== "menu" || game._starting) return;
       click(), H["addStat"]("games");
       let e = parseInt(read("clutcher_botcount", "10")) || 0;
       let t = parseInt(read("clutcher_diff", "2")) || 0;
       let n = root.querySelector(".map-col.sel");
       let r = n ? n.dataset.map : "dusker";
       let i = read("clutcher_mode", "defusal");
-      Promise.resolve(game.startGame(r, e, t, i)).then(() => game.finishTeamSelect("CT")).catch(() => {
-        goBtn.classList.remove("starting"), goStatus && goStatus.classList.remove("show"), toast("COULD NOT START MATCH")
+      let a = read("clutcher_cat", "matchmaking") === "practice";
+      goBtn.classList.add("starting"), goStatus && goStatus.classList.add("show");
+      let o = () => {
+        goBtn.classList.remove("starting"), goStatus && goStatus.classList.remove("show")
+      };
+      if (a) {
+        Promise.resolve(game.startGame(r, e, t, i)).then(() => game.finishTeamSelect("CT")).catch(() => {
+          o(), toast("COULD NOT START MATCH")
+        });
+        return
+      }
+      // online: zero bots guaranteed (window flag clamps botMgr.setup), then
+      // matchmake into a server running this exact map
+      try {
+        window.__clutcherOnlineMatch = !0
+      } catch {}
+      this["_mmOnlineInit"]();
+      Promise.resolve(game.startGame(r, 0, t, i)).then(() => game.finishTeamSelect("CT")).then(() => this["_mmNet"].requestMatch(r)).catch(() => {
+        o();
+        try {
+          window.__clutcherOnlineMatch = !1
+        } catch {}
+        toast("COULD NOT JOIN SERVER")
       })
     });
 
@@ -1903,6 +1923,100 @@ var Nv = class e {
         t()
       } catch {}
     }, this["_mmSync"]()
+  }
+  // ------------------------------------------------------------------ online bridge
+  // Wires netcode.js to the game: simple world-model markers for remote human
+  // players (movement via netcode interpolation), shot audio/muzzle for remote
+  // shots, local-player damage feedback, and local shots -> sendShot +
+  // raycast-vs-markers -> sendHit (server validates with sub-tick rewind).
+  ["_mmOnlineInit"]() {
+    if (this["_mmNet"]) return this["_mmNet"];
+    let self = this;
+    let game = this["game"];
+    let markers = self["_mmMarkers"] = new Map();
+    let mmDir = new mmVec, mmPos = new mmVec;
+
+    function marker(e) {
+      let t = new mmGroup;
+      t["name"] = "mremote_" + e;
+      let n = new mmStdMat({ color: 0xc05040 });
+      let r = new mmMesh(new mmCyl(.3, .3, 1.5, 10), n);
+      r["position"]["y"] = .75, t["add"](r);
+      let i = new mmMesh(new mmSphere(.22, 10, 8), n);
+      i["position"]["y"] = 1.62, t["add"](i);
+      return t
+    }
+
+    self["_mmNet"] = initMultiplayer({
+      scene: game["scene"],
+      camera: game["camera"],
+      getPlayerTransform: () => {
+        let e = game["player"];
+        return { x: e["x"], y: e["y"], z: e["z"], ry: e["yaw"], pitch: e["pitch"], onGround: e["onGround"] }
+      },
+      spawnRemotePlayer: (e, t) => {
+        let n = marker(e);
+        n["position"]["set"](t.x || 0, t.y || 0, t.z || 0), n["rotation"]["y"] = t.ry || 0, game["scene"]["add"](n), markers.set(e, n)
+      },
+      applyRemoteUpdate: (e, t) => {
+        let n = markers.get(e);
+        n && (n["position"]["set"](t.x, t.y, t.z), n["rotation"]["y"] = t.ry || 0)
+      },
+      despawnRemotePlayer: e => {
+        let t = markers.get(e);
+        t && (game["scene"]["remove"](t), markers.delete(e))
+      },
+      onShot: e => {
+        try {
+          game["audio"]["play"]("shot_m4a4", { pos: { x: e.ox, y: e.oy, z: e.oz } }), game["effects"]["worldMuzzle"](e.ox, e.oy, e.oz)
+        } catch {}
+      },
+      onHit: () => {},
+      onHp: e => {
+        let t = self["_mmNet"] && self["_mmNet"]["getMyId"]();
+        if (e.id === t) {
+          self["_mmLastHp"] == null && (self["_mmLastHp"] = 100);
+          e.hp < self["_mmLastHp"] && self["damageFlash"]();
+          self["_mmLastHp"] = e.hp;
+          try {
+            game["player"]["health"] = e.hp
+          } catch {}
+          return
+        }
+        let n = markers.get(e.id);
+        n && (n["visible"] = e.hp > 0)
+      },
+      onDead: e => {
+        let t = self["_mmNet"] && self["_mmNet"]["getMyId"]();
+        if (e.id === t) {
+          self["_mmLastHp"] = 0;
+          return
+        }
+        let n = markers.get(e.id);
+        n && (n["visible"] = !1)
+      },
+      onSelfSpawn: () => {}
+    });
+    // local gun shots: relay to the server (sub-tick) and raycast the remote
+    // markers for hit detection -> sendHit (server rewinds + validates)
+    onGameShot(e => {
+      let t = self["_mmNet"];
+      if (!t || !t.isConnected()) return;
+      let n = game["camera"];
+      mmPos["copy"](n["position"]);
+      n["getWorldDirection"](mmDir);
+      t.sendShot(mmPos["x"], mmPos["y"], mmPos["z"], mmDir["x"], mmDir["y"], mmDir["z"]);
+      let r = null, i = 1e9;
+      for (let [a, o] of markers) {
+        if (!o["visible"]) continue;
+        let s = o["position"];
+        let c = (s.x - mmPos.x) * mmDir.x + (s.y + .9 - mmPos.y) * mmDir.y + (s.z - mmPos.z) * mmDir.z;
+        if (c <= 0 || c > 120 || c >= i) continue;
+        rayPointDist(mmPos.x, mmPos.y, mmPos.z, mmDir.x, mmDir.y, mmDir.z, s.x, s.y + .9, s.z) <= .6 && (i = c, r = a)
+      }
+      r && t.sendHit(r, e && e.dmg || 25)
+    });
+    return self["_mmNet"]
   } ["showPause"]() {
     this["buyOpen"] || (this["_renderPauseKeys"](), this["_lockNotice"](), this["pauseEl"]["style"]["display"] = "flex", this["pauseOpen"] = !0x0)
   } ["hidePause"]() {

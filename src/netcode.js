@@ -45,6 +45,15 @@ var fullRetries = 0;          // /matchmake retries after { t:"full" }
 var reconnects = 0;           // same-room reconnect attempts after abnormal close
 var intentionalClose = !1;
 
+// online-session flag: while set, the game's bot spawning logic must spawn
+// ZERO bots (see main.js botMgr.setup guard)
+function setOnline(v) {
+  onlineMatch = v;
+  try {
+    window.__clutcherOnlineMatch = !!v
+  } catch {}
+}
+
 export function isConnected() {
   return connected && !!ws && ws.readyState === 1
 }
@@ -58,8 +67,17 @@ export function isOnlineMatch() {
 }
 
 // ---- matchmaking: ask the worker for a room, then connect automatically ----
-export async function requestMatch() {
-  let r = await fetch(WS_BASE + "/matchmake", { method: "POST" });
+// Rooms are per-map: the matchmaker only hands out rooms running the SAME map,
+// so you can never spawn into a server playing a different map than selected.
+var mmMap = "dusker";
+
+export async function requestMatch(map) {
+  mmMap = map || mmMap;
+  let r = await fetch(WS_BASE + "/matchmake", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ map: mmMap })
+  });
   if (!r.ok) {
     throw new Error("matchmaker HTTP " + r.status)
   }
@@ -67,10 +85,7 @@ export async function requestMatch() {
   if (!j || !j.roomId) {
     throw new Error(j && j.error || "matchmaker returned no room")
   }
-  onlineMatch = !0;
-  try {
-    window.__clutcherOnlineMatch = !0
-  } catch {}
+  setOnline(!0);
   connect(j.roomId);
   return j.roomId
 }
@@ -104,6 +119,12 @@ function handleMsg(m) {
       myId = m.id;
       connected = !0;
       reconnects = 0, fullRetries = 0;
+      // online-session flag: bot spawning logic in the game checks this and
+      // must spawn ZERO bots while it is set
+      onlineMatch = !0;
+      try {
+        window.__clutcherOnlineMatch = !0
+      } catch {}
       openRemotes(m.players);
       try {
         opts.onSelfSpawn({ id: myId, players: m.players || [] })
@@ -170,8 +191,9 @@ function handleMsg(m) {
       } catch {}
       connected = !1, ws = null, stopLoops();
       if (fullRetries++ < 5) {
-        setTimeout(() => requestMatch()["catch"](() => scheduleReconnect()), 400 * fullRetries)
+        setTimeout(() => requestMatch()["catch"](() => setOnline(!1)), 400 * fullRetries)
       } else {
+        setOnline(!1);
         flagSuspicious(myId, "matchmaker full, giving up")
       }
       break
@@ -207,7 +229,9 @@ function connect(room) {
     if (reconnects++ < 3 && roomId) {
       setTimeout(() => connect(roomId), 600 * reconnects)
     } else if (was) {
-      setTimeout(() => requestMatch()["catch"](() => {}), 1000)
+      setTimeout(() => requestMatch()["catch"](() => setOnline(!1)), 1000)
+    } else {
+      setOnline(!1)
     }
   };
   ws.onerror = () => {};
