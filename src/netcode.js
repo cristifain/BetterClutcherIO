@@ -41,6 +41,7 @@ var rafId = 0;
 var lastFrame = 0;
 var pingTimer = 0;            // latency probe interval
 var lastRtt = null;           // last measured round-trip in ms
+var sendCount = 0;            // state messages sent (for one-shot logging)
 var lastSent = null;          // last sent { x,y,z } for client-side validation
 var lastSentT = 0;
 var fullRetries = 0;          // /matchmake retries after { t:"full" }
@@ -237,6 +238,10 @@ function handleMsg(m) {
     case "s": {
       let r = remotes.get(m.id);
       if (!r) break;
+      if (!r.got1) {
+        r.got1 = true;
+        try { console.log("[net] first state from", m.id, m.x, m.y, m.z) } catch {}
+      }
       isNum(m.x) && (r.tx = m.x);
       isNum(m.y) && (r.ty = m.y);
       isNum(m.z) && (r.tz = m.z);
@@ -314,6 +319,10 @@ function sendState() {
     return
   }
   lastSent = { x: t.x, y: t.y, z: t.z }, lastSentT = now;
+  if (!sendCount) {
+    try { console.log("[net] first state sent", t.x, t.y, t.z) } catch {}
+  }
+  sendCount++;
   send({ t: "s", x: t.x, y: t.y, z: t.z, ry: t.ry, tm: t.team, k: t.kills, vt: now })
 }
 
@@ -375,7 +384,7 @@ function frame(now) {
 
 function startLoops() {
   stopLoops();
-  lastSent = null, lastSentT = 0, lastFrame = 0;
+  lastSent = null, lastSentT = 0, lastFrame = 0, sendCount = 0;
   sendTimer = setInterval(sendState, SEND_MS);
   rafId = requestAnimationFrame(frame);
 }

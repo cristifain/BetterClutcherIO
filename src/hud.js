@@ -1830,7 +1830,10 @@ var Nv = class e {
         } catch {}
         toast("COULD NOT JOIN SERVER")
       });
-      Promise.resolve(game.startGame(r, 0, t, i)).then(() => o()).catch(e => {
+      Promise.resolve(game.startGame(r, 0, t, i)).then(() => {
+        // map loaded (scene possibly rebuilt): re-attach any remote markers
+        self["_mmReattach"] && self["_mmReattach"](), o()
+      }).catch(e => {
         try {
           console.error("[matchmaking]", e)
         } catch {}
@@ -2012,7 +2015,14 @@ var Nv = class e {
       },
       applyRemoteUpdate: (e, t) => {
         let n = markers.get(e);
-        n && (n["position"]["set"](t.x, t.y, t.z), n["rotation"]["y"] = t.ry || 0, t.team && n["userData"]["team"] !== t.team && (n["userData"]["team"] = t.team, setTeamColor(n, t.team)));
+        if (!n) return;
+        // self-heal: map loads can rebuild the scene and detach our markers
+        if (n.parent !== game["scene"]) game["scene"]["add"](n);
+        if (!n.userData.got1) {
+          n.userData.got1 = true;
+          try { console.log("[mm] applying first update for", e, t.x, t.y, t.z) } catch {}
+        }
+        n["position"]["set"](t.x, t.y, t.z), n["rotation"]["y"] = t.ry || 0, t.team && n["userData"]["team"] !== t.team && (n["userData"]["team"] = t.team, setTeamColor(n, t.team));
         let r = roster.get(e);
         if (r) {
           let i = !1;
@@ -2089,6 +2099,11 @@ var Nv = class e {
     });
     // local gun shots: relay to the server (sub-tick) and raycast the remote
     // markers for hit detection -> sendHit (server rewinds + validates)
+    self["_mmReattach"] = () => {
+      for (let e of markers.values()) {
+        if (e.parent !== game["scene"]) game["scene"]["add"](e)
+      }
+    };
     onGameShot(e => {
       let t = self["_mmNet"];
       if (!t || !t.isConnected()) return;
