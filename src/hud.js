@@ -1658,7 +1658,20 @@ var Nv = class e {
     let a = n["querySelector"](__p_KGFS_MAIN_STR(0x15ffb, 0xb));
     r && (r["textContent"] = __p_KGFS_MAIN_STR(0x1600b, 0xa) + e + "%"), i && t && (i["textContent"] = t), a && (a["style"]["width"] = e + "%")
   } ["showMenu"]() {
-    this["menuEl"]["style"]["display"] = "block", this["setPlayLoading"](!0x1), this["_syncSettingsRows"](), this["_hwNotice"](), this["_lockNotice"](), this["_syncFsBtn"] && this["_syncFsBtn"](), this["pauseEl"]["style"]["display"] = "none", this["buyEl"]["style"]["display"] = "none", this["root"]["classList"]["add"]("inmenu"), document["body"]["classList"]["add"]("menuopen"), this["refreshMenuChrome"](), this["renderBinds"]();
+    this["menuEl"]["style"]["display"] = "none";
+    // new CS2-style main menu shell (index.html #menu-root) replaces the old
+    // JS-built menuEl; the old element stays in the DOM but is never shown
+    this["_mmRoot"] = this["_mmRoot"] || document["getElementById"]("menu-root");
+    if (this["_mmRoot"]) {
+      this["_mmRoot"]["classList"]["add"]("open");
+      if (!this["_mmWired"]) {
+        this["_mmWired"] = !0x0;
+        try {
+          this["_wireMainMenu"]()
+        } catch {}
+      }
+    }
+    this["setPlayLoading"](!0x1), this["_syncSettingsRows"](), this["_hwNotice"](), this["_lockNotice"](), this["_syncFsBtn"] && this["_syncFsBtn"](), this["pauseEl"]["style"]["display"] = "none", this["buyEl"]["style"]["display"] = "none", this["root"]["classList"]["add"]("inmenu"), document["body"]["classList"]["add"]("menuopen"), this["refreshMenuChrome"](), this["renderBinds"]();
     let e = this["menuEl"]["querySelector"](__p_KGFS_MAIN_STR(0x16016, 0xf));
     if (e) {
       for (let t of e["children"]) {
@@ -1666,7 +1679,225 @@ var Nv = class e {
       }
     }
   } ["hideMenu"]() {
-    this["menuEl"]["style"]["display"] = "none", this["setPlayLoading"](!0x1), this["root"]["classList"]["remove"]("inmenu"), document["body"]["classList"]["remove"]("menuopen")
+    this["menuEl"]["style"]["display"] = "none", this["_mmRoot"] && this["_mmRoot"]["classList"]["remove"]("open"), this["setPlayLoading"](!0x1), this["root"]["classList"]["remove"]("inmenu"), document["body"]["classList"]["remove"]("menuopen")
+  }
+  // ------------------------------------------------------------------ main menu bridge
+  // Wires the static #menu-root shell (index.html) to the game: match start,
+  // bot difficulty + count (practice only, pre-match only), and the main-menu
+  // settings (persisted to the same clutcher_* keys the game reads, with live
+  // applies via the game's own setters). The in-game pause settings (pauseEl)
+  // are untouched.
+  ["_wireMainMenu"]() {
+    let root = this["_mmRoot"];
+    let game = this["game"];
+    if (!root || !game) return;
+    let q = e => root.querySelector(e);
+    let store = (e, t) => {
+      try {
+        localStorage.setItem(e, t)
+      } catch {}
+    };
+    let read = (e, t) => {
+      try {
+        let n = localStorage.getItem(e);
+        return n === null ? t : n
+      } catch {
+        return t
+      }
+    };
+    let click = () => {
+      try {
+        game.audio.play("uiclick")
+      } catch {}
+    };
+    let toast = e => root._showToast && root._showToast(e);
+    let paints = [];
+
+    // ---- play: category (matchmaking is a locked placeholder, practice plays)
+    let goBtn = q("#mmGoBtn");
+    let botDiffWrap = q("#mmBotDiffWrap");
+    let botsWrap = q("#mmBotsWrap");
+    let catTabs = [...root.querySelectorAll(".cat-tab[data-mmcat]")];
+    let setCat = e => {
+      store("clutcher_cat", e);
+      for (let t of catTabs) t.classList.toggle("active", t.dataset.mmcat === e);
+      let t = e === "practice";
+      botDiffWrap.classList.toggle("visible", t), botsWrap.classList.toggle("visible", t), goBtn.classList.toggle("disabled", !t)
+    };
+    for (let t of catTabs) t.addEventListener("click", () => {
+      setCat(t.dataset.mmcat), click()
+    });
+
+    // ---- play: mode (practice only)
+    let modeTabs = [...root.querySelectorAll(".mode-tab[data-mmmode]")];
+    let setMode = e => {
+      store("clutcher_mode", e);
+      for (let t of modeTabs) t.classList.toggle("active", t.dataset.mmmode === e)
+    };
+    for (let t of modeTabs) t.addEventListener("click", () => {
+      setMode(t.dataset.mmmode), click()
+    });
+
+    // ---- bot difficulty (only selectable here, before starting practice)
+    let diffMenu = q("#mmBotDiffMenu");
+    q("#mmBotDiffBtn").addEventListener("click", e => {
+      e.stopPropagation(), diffMenu.classList.toggle("open")
+    }), document.addEventListener("click", () => diffMenu.classList.remove("open"));
+    let setDiff = e => {
+      store("clutcher_diff", String(e));
+      for (let t of diffMenu.querySelectorAll(".bot-diff-item")) t.classList.toggle("selected", t.dataset.value === String(e))
+    };
+    for (let t of diffMenu.querySelectorAll(".bot-diff-item")) t.addEventListener("click", e => {
+      e.stopPropagation(), setDiff(parseInt(t.dataset.value) || 0), diffMenu.classList.remove("open"), click()
+    });
+
+    // ---- bot count stepper
+    let botsVal = q("#mmBotsVal");
+    let setBots = e => {
+      e = Math.max(0, Math.min(16, e | 0)), store("clutcher_botcount", String(e)), botsVal.textContent = String(e)
+    };
+    q("#mmBotsMinus").addEventListener("click", () => {
+      setBots((parseInt(read("clutcher_botcount", "10")) || 0) - 1), click()
+    }), q("#mmBotsPlus").addEventListener("click", () => {
+      setBots((parseInt(read("clutcher_botcount", "10")) || 0) + 1), click()
+    });
+
+    // ---- map cards
+    let mapCards = [...root.querySelectorAll(".map-col[data-map]")];
+    let setMap = e => {
+      for (let t of mapCards) t.classList.toggle("sel", t.dataset.map === e)
+    };
+    for (let t of mapCards) t.addEventListener("click", () => {
+      setMap(t.dataset.map), click()
+    });
+
+    // ---- GO (matchmaking does nothing; practice starts a bot match)
+    goBtn.addEventListener("click", () => {
+      if (goBtn.classList.contains("disabled") || read("clutcher_cat", "matchmaking") !== "practice") {
+        toast("MATCHMAKING IS NOT AVAILABLE - USE PRACTICE"), click();
+        return
+      }
+      if (game.state !== "menu" || game._starting) return;
+      click(), H["addStat"]("games");
+      let e = parseInt(read("clutcher_botcount", "10")) || 0;
+      let t = parseInt(read("clutcher_diff", "2")) || 0;
+      let n = root.querySelector(".map-col.sel");
+      let r = n ? n.dataset.map : "dusker";
+      let i = read("clutcher_mode", "defusal");
+      Promise.resolve(game.startGame(r, e, t, i)).then(() => game.finishTeamSelect("CT")).catch(() => {})
+    });
+
+    // ---- settings: player name
+    let nameIn = q("#mmName");
+    nameIn.addEventListener("input", () => {
+      store("clutcher_name", nameIn.value), this["refreshMenuChrome"]()
+    });
+
+    // ---- settings: sensitivity (CS2 scale) + zoom sensitivity
+    let sens = q("#mmSens"), sensVal = q("#mmSensVal");
+    let zoom = q("#mmZoomSens"), zoomVal = q("#mmZoomSensVal");
+    sens.min = Tr["min"], sens.max = Tr["max"], sens.step = .01;
+    zoom.min = Er["min"], zoom.max = Er["max"], zoom.step = .01;
+    let sensPrec = Tr["precision"] == null ? 2 : Tr["precision"];
+    let zoomPrec = Er["precision"] == null ? 2 : Er["precision"];
+    let paintSens = () => {
+      let e = parseFloat(read("clutcher_sens_cs2", ""));
+      Number.isFinite(e) || (e = Tr["def"]), sens.value = e, sensVal.textContent = e.toFixed(sensPrec)
+    };
+    let paintZoom = () => {
+      let e = parseFloat(read("clutcher_zoomsens", ""));
+      Number.isFinite(e) || (e = Er["def"]), zoom.value = e, zoomVal.textContent = e.toFixed(zoomPrec)
+    };
+    sens.addEventListener("input", () => {
+      let e = parseFloat(sens.value);
+      Number.isFinite(e) && (store("clutcher_sens_cs2", String(e)), sensVal.textContent = e.toFixed(sensPrec), game.sensitivity = Dr(e))
+    }), zoom.addEventListener("input", () => {
+      let e = parseFloat(zoom.value);
+      Number.isFinite(e) && (store("clutcher_zoomsens", String(e)), zoomVal.textContent = e.toFixed(zoomPrec), game.zoomSensRatio = e)
+    }), paints.push(paintSens, paintZoom);
+
+    // ---- settings: master volume
+    let vol = q("#mmVol"), volVal = q("#mmVolVal");
+    let paintVol = () => {
+      let e = parseFloat(read("clutcher_vol", "1"));
+      Number.isFinite(e) || (e = 1), vol.value = Math.round(e * 100), volVal.textContent = Math.round(e * 100) + "%"
+    };
+    vol.addEventListener("input", () => {
+      let e = parseInt(vol.value) / 100;
+      store("clutcher_vol", String(e)), volVal.textContent = vol.value + "%";
+      try {
+        game.audio.setVolume(e)
+      } catch {}
+    }), paints.push(paintVol);
+
+    // ---- settings: dev console (persisted; read again on next page load)
+    let devEl = q("#mmDevConsole");
+    let paintDev = () => {
+      devEl.textContent = read("clutcher_devconsole", "0") === "1" ? "YES" : "NO"
+    };
+    devEl.addEventListener("click", () => {
+      let e = read("clutcher_devconsole", "0") === "1";
+      store("clutcher_devconsole", e ? "0" : "1"), paintDev(), click(), toast(e ? "CONSOLE OFF ON NEXT LOAD" : "CONSOLE ON ON NEXT LOAD")
+    }), paints.push(paintDev);
+
+    // ---- settings: video cycles (live applies via the game's own setters)
+    let wireCycle = (e, t, n) => {
+      let r = JSON.parse(e.dataset.opts), i = JSON.parse(e.dataset.labels);
+      let a = () => {
+        let o = t(), s = r.indexOf(o);
+        e.textContent = i[s < 0 ? 0 : s]
+      };
+      e.addEventListener("click", () => {
+        let o = t(), s = r.indexOf(o);
+        n(r[(s + 1) % r.length]), a(), click()
+      }), a(), paints.push(a)
+    };
+    for (let e of root.querySelectorAll("[data-mmset]")) {
+      let t = e.dataset.mmset;
+      t === "quality" ? wireCycle(e, () => game.quality, n => game.setQuality(n)) : t === "fpscap" ? wireCycle(e, () => parseInt(read("clutcher_fpscap", "0")) || 0, n => {
+        game.fpsCap = n, store("clutcher_fpscap", String(n))
+      }) : t === "shadows" ? wireCycle(e, () => read("clutcher_shadows", ""), n => game.setShadows(n)) : t === "aa" ? wireCycle(e, () => read("clutcher_aa", game._aaBase || "msaa"), n => game.setAA(n)) : t === "bloom" ? wireCycle(e, () => game.postfx && game.postfx.bloomOn ? 1 : 0, n => game.setBloomPref(!!n)) : t === "aniso" ? wireCycle(e, () => parseInt(read("clutcher_aniso", "16")) || 16, n => game.setAniso(n)) : t === "autotier" ? wireCycle(e, () => read("clutcher_autotier", "1") !== "0" ? 1 : 0, n => store("clutcher_autotier", n ? "1" : "0")) : t === "showfps" && wireCycle(e, () => game.showFps ? 1 : 0, n => game.setShowFps(!!n))
+    }
+
+    // ---- settings: crosshair rows (live via the pcrossair config API)
+    let xhApi = window.BetterClutcherXhair;
+    if (xhApi) {
+      for (let e of root.querySelectorAll("[data-xh]")) {
+        let t = e.dataset.xh;
+        if (e.classList.contains("fake-select")) {
+          let n = JSON.parse(e.dataset.opts), r = JSON.parse(e.dataset.labels);
+          let i = () => {
+            let a = xhApi.get()[t], o = n.indexOf(a);
+            e.textContent = r[o < 0 ? 0 : o]
+          };
+          e.addEventListener("click", () => {
+            let a = xhApi.get()[t], o = n.indexOf(a);
+            xhApi.set(t, n[(o + 1) % n.length]), i(), click()
+          }), i(), paints.push(i)
+        } else {
+          let a = root.querySelector(`[data-xhval="${t}"]`);
+          e.addEventListener("input", () => {
+            let o = parseFloat(e.value);
+            Number.isFinite(o) && (xhApi.set(t, o), a && (a.textContent = String(o)))
+          });
+          let o = () => {
+            let s = xhApi.get()[t];
+            e.value = s, a && (a.textContent = String(s))
+          };
+          o(), paints.push(o)
+        }
+      }
+    }
+
+    // ---- sync on every menu open
+    this["_mmSync"] = () => {
+      setCat(read("clutcher_cat", "matchmaking")), setMode(read("clutcher_mode", "defusal")), setDiff(parseInt(read("clutcher_diff", "2")) || 0), setBots(parseInt(read("clutcher_botcount", "10")) || 0);
+      let e = root.querySelector(".map-col.sel");
+      e || setMap("dusker"), nameIn.value = read("clutcher_name", "Player");
+      for (let t of paints) try {
+        t()
+      } catch {}
+    }, this["_mmSync"]()
   } ["showPause"]() {
     this["buyOpen"] || (this["_renderPauseKeys"](), this["_lockNotice"](), this["pauseEl"]["style"]["display"] = "flex", this["pauseOpen"] = !0x0)
   } ["hidePause"]() {

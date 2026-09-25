@@ -1335,6 +1335,162 @@ window.__cs2UiScale = function () {
     document.head.appendChild(s);
   })();
 </script>
+<style id="mm-style">
+  /* ===== Main menu shell (CS2-style), scoped under #menu-root ===== */
+  #menu-root { display: none; position: fixed; inset: 0; z-index: 90; font-family: "Segoe UI", "Tahoma", Roboto, system-ui, sans-serif; font-size: 13px; color: #d8dde3; user-select: none; }
+  #menu-root.open { display: block; }
+  #menu-root * { margin: 0; padding: 0; box-sizing: border-box; }
+  #menu-root .mm-bg { position: absolute; inset: 0; z-index: 0;
+    background: radial-gradient(ellipse at 50% 40%, #2a3038 0%, #12161a 45%, #05070a 100%), linear-gradient(180deg, #1a1f24 0%, #0a0c0e 100%); }
+  #menu-root .mm-bg::before { content: ""; position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.02) 50%, transparent 100%), repeating-linear-gradient(0deg, transparent 0 3px, rgba(0,0,0,0.15) 3px 4px); pointer-events: none; }
+  #menu-root .mm-app { position: relative; z-index: 2; display: flex; flex-direction: column; height: 100%; width: 100%; pointer-events: none; }
+  #menu-root .mm-app > * { pointer-events: auto; }
+
+  /* top bar */
+  #menu-root .topbar { height: 44px; display: flex; align-items: center; background: rgba(10,14,18,0.35);
+    background-image: repeating-radial-gradient(circle at 20% 50%, rgba(255,255,255,0.035) 0 1px, transparent 1px 16px), repeating-radial-gradient(circle at 78% 40%, rgba(255,255,255,0.025) 0 1px, transparent 1px 22px), repeating-radial-gradient(circle at 45% 130%, rgba(255,255,255,0.02) 0 1px, transparent 1px 28px);
+    -webkit-backdrop-filter: blur(14px) saturate(120%); backdrop-filter: blur(14px) saturate(120%); border-bottom: 1px solid rgba(0,0,0,0.7);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -1px 0 rgba(0,0,0,0.5), 0 2px 12px rgba(0,0,0,0.35); position: relative; z-index: 10; }
+  #menu-root .topbar::after { content: ""; position: absolute; inset: 0; pointer-events: none; border-top: 1px solid rgba(79,166,74,0.35); border-bottom: 1px solid rgba(79,166,74,0.15);
+    box-shadow: inset 0 2px 6px rgba(79,166,74,0.08), inset 0 -2px 6px rgba(79,166,74,0.05); }
+  #menu-root .topbar-left { display: flex; align-items: center; height: 100%; padding: 0 14px; gap: 20px; flex: 0 0 auto; }
+  #menu-root .icon-btn { width: 22px; height: 22px; display: grid; place-items: center; color: #cfd6dd; cursor: pointer; transition: color .15s, transform .15s; background: none; border: none; line-height: 1; }
+  #menu-root .icon-btn svg { width: 17px; height: 17px; display: block; }
+  #menu-root .icon-btn:hover { color: #fff; transform: scale(1.1); }
+  #menu-root .icon-btn.active { color: #4fa64a; text-shadow: 0 0 8px rgba(79,166,74,0.5); }
+  #menu-root .nav { flex: 1; display: flex; justify-content: center; align-items: center; height: 100%; }
+  #menu-root .nav-tab { display: flex; align-items: center; padding: 0 26px; height: 60%; font-size: 12px; font-weight: 700; letter-spacing: 2px; color: #a8b1ba; text-transform: uppercase; cursor: pointer; transition: color .15s; position: relative; border-right: 1px solid #4a5259; }
+  #menu-root .nav-tab:last-child { border-right: none; }
+  #menu-root .nav-tab:not(:last-child)::after { content: ""; position: absolute; right: -1px; top: 0; bottom: 0; width: 1px; background: #4a5259; }
+  #menu-root .nav-tab:hover { color: #e6ecf2; }
+  #menu-root .nav-tab.active { color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.35); }
+  #menu-root .topbar-right { flex: 0 0 auto; display: flex; align-items: center; height: 100%; padding: 0 16px; }
+  #menu-root .user-btn { position: relative; width: 26px; height: 26px; display: grid; place-items: center; cursor: pointer; transition: filter .15s; }
+  #menu-root .user-btn:hover { filter: brightness(1.25); }
+  #menu-root .user-square { display: block; width: 24px; height: 24px; background: #4a5259; border: 1px solid #2a3138; box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -1px 0 rgba(0,0,0,0.4); }
+
+  /* views */
+  #menu-root .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; z-index: 2; }
+  #menu-root .view { display: none; flex-direction: column; flex: 1; overflow: hidden; position: relative; }
+  #menu-root .view.open { display: flex; }
+  #menu-root .view.open::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 20; border: 1px solid rgba(79,166,74,0.25);
+    box-shadow: inset 0 0 20px rgba(79,166,74,0.06), inset 0 0 60px rgba(79,166,74,0.03); }
+  #menu-root .placeholder-content { flex: 1; display: flex; align-items: center; justify-content: center; color: #3a424a; font-size: 14px; letter-spacing: 2px; text-transform: uppercase; font-weight: 700; }
+
+  /* settings view */
+  #menu-root .settings-header-top { display: flex; align-items: center; padding: 0 24px; height: 42px; background: rgba(0,0,0,0.35); border-bottom: 1px solid rgba(255,255,255,0.06); flex: 0 0 auto; position: relative; z-index: 5; }
+  #menu-root .settings-header-top::after { content: ""; position: absolute; inset: 0; pointer-events: none; border-bottom: 1px solid rgba(79,166,74,0.2); box-shadow: inset 0 -1px 4px rgba(79,166,74,0.05); }
+  #menu-root .header-tab { height: 100%; display: flex; align-items: center; padding: 0 16px; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; color: #8e98a3; text-transform: uppercase; cursor: pointer; transition: color .15s; border-bottom: 2px solid transparent; }
+  #menu-root .header-tab.active { color: #fff; border-bottom-color: #4fa64a; text-shadow: 0 0 8px rgba(79,166,74,0.4); }
+  #menu-root .header-tab:not(.active):hover { color: #b8c2cd; }
+  #menu-root .header-close { margin-left: auto; width: 32px; height: 32px; display: grid; place-items: center; cursor: pointer; color: #8e98a3; transition: color .15s, transform .15s; font-size: 20px; line-height: 1; background: none; border: none; }
+  #menu-root .header-close:hover { color: #fff; transform: scale(1.1); }
+  #menu-root .settings-header-sub { display: flex; align-items: center; padding: 0 24px; height: 36px; background: rgba(0,0,0,0.15); border-bottom: 1px solid rgba(255,255,255,0.04); flex: 0 0 auto; gap: 4px; position: relative; z-index: 5; }
+  #menu-root .sub-tab { height: 100%; display: flex; align-items: center; padding: 0 10px; font-size: 10px; font-weight: 600; letter-spacing: 0.8px; color: #6f7a85; text-transform: uppercase; cursor: pointer; transition: color .15s; border-bottom: 1px solid transparent; }
+  #menu-root .sub-tab.active { color: #c9d3dd; border-bottom-color: #4fa64a; text-shadow: 0 0 6px rgba(79,166,74,0.3); }
+  #menu-root .sub-tab:not(.active):hover { color: #a8b1ba; }
+  #menu-root .settings-content { flex: 1; overflow-y: auto; padding: 18px 40px 30px 40px; scrollbar-width: thin; scrollbar-color: #3a424a transparent; position: relative; z-index: 4; }
+  #menu-root .settings-content::-webkit-scrollbar { width: 6px; }
+  #menu-root .settings-content::-webkit-scrollbar-thumb { background: #3a424a; border-radius: 3px; }
+  #menu-root .settings-section { font-size: 12px; font-weight: 600; color: #b0bac4; letter-spacing: 0.8px; text-transform: uppercase; margin: 22px 0 6px 0; padding-bottom: 4px; border-bottom: 1px solid rgba(79,166,74,0.15); }
+  #menu-root .settings-section:first-of-type { margin-top: 0; }
+  #menu-root .setting-row { display: flex; align-items: center; justify-content: space-between; padding: 5px 0; min-height: 30px; border-bottom: 1px solid rgba(79,166,74,0.04); }
+  #menu-root .setting-row.disabled { opacity: .45; pointer-events: none; }
+  #menu-root .setting-label { color: #cbd3dc; font-size: 13px; font-weight: 400; flex: 1 1 auto; padding-right: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #menu-root .setting-control { flex: 0 0 auto; display: flex; align-items: center; gap: 10px; min-width: 200px; justify-content: flex-end; }
+  #menu-root .setting-value { color: #a8b1ba; font-size: 12px; min-width: 40px; text-align: right; }
+  #menu-root input.mm-range { -webkit-appearance: none; appearance: none; width: 140px; height: 3px; background: #2e363e; border-radius: 2px; outline: none; box-shadow: inset 0 1px 2px rgba(0,0,0,0.6); cursor: pointer; }
+  #menu-root input.mm-range::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 10px; height: 10px; background: #d0d8e2; border-radius: 50%; box-shadow: 0 0 4px rgba(0,0,0,0.6), 0 0 8px rgba(79,166,74,0.3); }
+  #menu-root input.mm-range::-moz-range-thumb { width: 10px; height: 10px; background: #d0d8e2; border: none; border-radius: 50%; box-shadow: 0 0 4px rgba(0,0,0,0.6), 0 0 8px rgba(79,166,74,0.3); }
+  #menu-root .fake-select { background: #1a2028; border: 1px solid rgba(79,166,74,0.25); border-radius: 2px; padding: 3px 22px 3px 8px; font-size: 11px; color: #c9d3dd; position: relative; min-width: 90px; text-align: left; box-shadow: inset 0 1px 2px rgba(0,0,0,0.4), 0 0 6px rgba(79,166,74,0.06); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; line-height: 18px; transition: border-color .15s; }
+  #menu-root .fake-select:hover { border-color: rgba(79,166,74,0.45); }
+  #menu-root .fake-select::after { content: "▼"; position: absolute; right: 6px; top: 50%; transform: translateY(-50%); font-size: 7px; color: #6fd066; pointer-events: none; }
+  #menu-root .mm-name { background: #1a2028; border: 1px solid rgba(79,166,74,0.25); border-radius: 2px; color: #c9d3dd; font-size: 12px; padding: 4px 8px; width: 160px; outline: none; font-family: inherit; }
+  #menu-root .mm-name:focus { border-color: rgba(79,166,74,0.5); }
+
+  /* play view */
+  #menu-root .play-view { background: rgba(8,12,16,0.55); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); position: relative; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #3a424a transparent; }
+  #menu-root .play-view::-webkit-scrollbar { width: 6px; }
+  #menu-root .play-view::-webkit-scrollbar-thumb { background: #3a424a; border-radius: 3px; }
+  #menu-root .play-categories { display: flex; justify-content: center; gap: 24px; padding: 12px 24px 0 24px; flex: 0 0 auto; position: relative; z-index: 5; }
+  #menu-root .cat-tab { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; color: #8e98a3; text-transform: uppercase; cursor: pointer; padding: 6px 4px; transition: color .15s; }
+  #menu-root .cat-tab:hover { color: #d8dde3; }
+  #menu-root .cat-tab.active { color: #fff; text-shadow: 0 0 8px rgba(255,255,255,0.3); }
+  #menu-root .play-modes { display: flex; justify-content: center; align-items: center; gap: 20px; padding: 8px 24px 12px 24px; flex: 0 0 auto; border-bottom: 1px solid rgba(255,255,255,0.05); position: relative; z-index: 5; flex-wrap: wrap; }
+  #menu-root .mode-tab { font-size: 10px; font-weight: 700; letter-spacing: 1.2px; color: #6f7a85; text-transform: uppercase; cursor: pointer; padding: 4px 6px; transition: color .15s; display: flex; align-items: center; gap: 5px; position: relative; }
+  #menu-root .mode-tab:hover { color: #b8c2cd; }
+  #menu-root .mode-tab.active { color: #c9d3dd; }
+  #menu-root .mode-tab.active::before { content: ""; width: 4px; height: 4px; background: #4fa64a; border-radius: 50%; box-shadow: 0 0 6px rgba(79,166,74,0.7); }
+  #menu-root .mode-tab[data-locked="true"] .lock-tooltip { position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%); width: 260px; background: #0d1117; border: 1px solid rgba(79,166,74,0.35); border-radius: 3px; padding: 12px 14px; box-shadow: 0 8px 24px rgba(0,0,0,0.7), 0 0 0 1px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05); z-index: 100; pointer-events: none; opacity: 0; visibility: hidden; transition: opacity .15s, visibility .15s; text-align: left; }
+  #menu-root .mode-tab[data-locked="true"]:hover .lock-tooltip { opacity: 1; visibility: visible; }
+  #menu-root .lock-tooltip-title { font-size: 14px; font-weight: 800; color: #fff; letter-spacing: 0.5px; margin-bottom: 6px; }
+  #menu-root .lock-tooltip-desc { font-size: 12px; font-weight: 400; color: #a8b1ba; letter-spacing: 0.2px; line-height: 1.4; }
+  #menu-root .bot-diff-wrap, #menu-root .bots-stepper { position: relative; display: none; }
+  #menu-root .bot-diff-wrap.visible, #menu-root .bots-stepper.visible { display: block; }
+  #menu-root .bots-stepper.visible { display: flex; align-items: center; gap: 8px; }
+  #menu-root .bot-diff-btn { font-size: 10px; font-weight: 700; letter-spacing: 1.2px; color: #c9d3dd; text-transform: uppercase; cursor: pointer; padding: 4px 10px; border: 1px solid rgba(79,166,74,0.35); border-radius: 3px; background: rgba(79,166,74,0.08); transition: background .15s, border-color .15s, color .15s; display: flex; align-items: center; gap: 6px; }
+  #menu-root .bot-diff-btn:hover { background: rgba(79,166,74,0.18); border-color: rgba(79,166,74,0.6); color: #fff; }
+  #menu-root .bot-diff-btn .caret { font-size: 7px; color: #6fd066; }
+  #menu-root .bot-diff-menu { position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%); min-width: 180px; background: #0d1117; border: 1px solid rgba(79,166,74,0.35); border-radius: 3px; box-shadow: 0 10px 28px rgba(0,0,0,0.75), 0 0 0 1px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05); z-index: 200; overflow: hidden; display: none; }
+  #menu-root .bot-diff-menu.open { display: block; }
+  #menu-root .bot-diff-menu-header { padding: 8px 12px; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #8e98a3; border-bottom: 1px solid rgba(79,166,74,0.2); background: rgba(0,0,0,0.35); }
+  #menu-root .bot-diff-item { padding: 8px 12px; font-size: 12px; font-weight: 500; color: #cbd3dc; cursor: pointer; transition: background .12s, color .12s; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  #menu-root .bot-diff-item:hover { background: rgba(79,166,74,0.15); color: #fff; }
+  #menu-root .bot-diff-item.selected { color: #6fd066; background: rgba(79,166,74,0.1); }
+  #menu-root .bot-diff-item .check { font-size: 12px; color: #6fd066; opacity: 0; }
+  #menu-root .bot-diff-item.selected .check { opacity: 1; }
+  #menu-root .bots-stepper { font-size: 10px; font-weight: 700; letter-spacing: 1.2px; color: #c9d3dd; text-transform: uppercase; }
+  #menu-root .step-btn { width: 20px; height: 20px; display: grid; place-items: center; border: 1px solid rgba(79,166,74,0.35); border-radius: 3px; background: rgba(79,166,74,0.08); cursor: pointer; color: #c9d3dd; font-size: 12px; line-height: 1; transition: background .15s, border-color .15s; }
+  #menu-root .step-btn:hover { background: rgba(79,166,74,0.18); border-color: rgba(79,166,74,0.6); color: #fff; }
+  #menu-root .map-grid { display: flex; gap: 6px; padding: 8px 12px 0 12px; flex: 1; overflow: hidden; position: relative; z-index: 4; min-height: 0; }
+  #menu-root .map-col { flex: 1 1 0; display: flex; flex-direction: column; position: relative; transition: background .15s, box-shadow .15s; cursor: pointer; border: 1px solid rgba(255,255,255,0.06); background: linear-gradient(180deg, #2a3038 0%, #12161a 100%); overflow: hidden; }
+  #menu-root .map-col:hover { background: linear-gradient(180deg, #2e3640 0%, #14181e 100%); box-shadow: inset 0 0 0 1px rgba(79,166,74,0.35), 0 0 20px rgba(79,166,74,0.08); }
+  #menu-root .map-col.sel { box-shadow: inset 0 0 0 2px #4fa64a, 0 0 24px rgba(79,166,74,0.15); }
+  #menu-root .map-col.sel::after { content: "✓ SELECTED"; position: absolute; top: 10px; left: 10px; z-index: 5; font-size: 9px; font-weight: 700; letter-spacing: 1.5px; color: #06210a; background: #6fd066; padding: 3px 8px; border-radius: 2px; }
+  #menu-root .map-col::before { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(45deg, transparent 0 8px, rgba(255,255,255,0.01) 8px 9px), radial-gradient(ellipse at 50% 20%, rgba(255,255,255,0.05) 0%, transparent 60%); pointer-events: none; z-index: 1; }
+  #menu-root .map-body { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; z-index: 2; padding: 20px; }
+  #menu-root .map-big-icon { width: 78%; max-width: 340px; aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center; text-align: center; background: linear-gradient(180deg, #3c444d 0%, #262e36 100%); border: 2px solid rgba(255,255,255,0.25); border-radius: 14px; box-shadow: inset 0 2px 0 rgba(255,255,255,0.12), inset 0 -2px 4px rgba(0,0,0,0.5), 0 6px 18px rgba(0,0,0,0.5); padding: 10px; transition: border-color .15s, box-shadow .15s; }
+  #menu-root .map-col:hover .map-big-icon { border-color: rgba(79,166,74,0.6); box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 0 20px rgba(79,166,74,0.25); }
+  #menu-root .map-big-icon span { font-size: clamp(20px, 3.2vw, 42px); font-weight: 900; letter-spacing: 1.5px; line-height: 1.1; color: #f0f3f6; text-transform: uppercase; text-shadow: 0 2px 4px rgba(0,0,0,0.9), 0 0 10px rgba(255,255,255,0.15); }
+  #menu-root .map-footer { flex: 0 0 auto; padding: 10px 6px 14px 6px; text-align: center; font-size: 13px; font-weight: 700; letter-spacing: 0.8px; color: #c9d3dd; background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.55) 100%); text-shadow: 0 1px 3px rgba(0,0,0,0.9); position: relative; z-index: 3; transition: color .15s, text-shadow .15s; }
+  #menu-root .map-col:hover .map-footer { color: #fff; text-shadow: 0 0 8px rgba(79,166,74,0.5), 0 1px 3px rgba(0,0,0,0.9); }
+  #menu-root .play-bottom { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; padding: 14px 24px 18px 24px; position: relative; z-index: 5; }
+  #menu-root .go-btn { position: relative; width: 260px; height: 80px; border: none; padding: 0; cursor: pointer; border-radius: 2px; background: #146b14; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.5); overflow: hidden; transition: filter 0.12s ease; }
+  #menu-root .go-btn .texture { position: absolute; inset: 0; pointer-events: none; }
+  #menu-root .go-btn .texture svg { width: 100%; height: 100%; display: block; }
+  #menu-root .go-btn:hover { filter: brightness(1.1); }
+  #menu-root .go-btn:active { filter: brightness(1.3); }
+  #menu-root .go-btn .label { position: absolute; inset: 0; z-index: 2; display: flex; align-items: center; justify-content: center; font-family: "Courier New", monospace; font-weight: 700; font-size: 30px; letter-spacing: 10px; color: #cdffc4; text-shadow: 0 0 4px #f2fff0, 0 0 12px #8dff6e, 0 0 24px #3dff3d, 0 0 46px rgba(61,255,61,0.6); animation: mm-flicker 2.4s infinite ease-in-out; pointer-events: none; }
+  @keyframes mm-flicker {
+    0%, 100% { opacity: 1; text-shadow: 0 0 4px #f2fff0, 0 0 12px #8dff6e, 0 0 24px #3dff3d, 0 0 46px rgba(61,255,61,0.6); }
+    46% { opacity: 1; text-shadow: 0 0 6px #ffffff, 0 0 18px #a6ff8e, 0 0 34px #4dff4d, 0 0 60px rgba(61,255,61,0.8); }
+    48% { opacity: 0.82; text-shadow: none; }
+    50% { opacity: 1; text-shadow: 0 0 4px #f2fff0, 0 0 12px #8dff6e, 0 0 24px #3dff3d; }
+  }
+  #menu-root .go-btn.disabled { filter: grayscale(0.9) brightness(0.55); cursor: not-allowed; }
+  #menu-root .go-btn.disabled .label { animation: none; }
+  #menu-root .play-side { position: absolute; right: 12px; top: 80px; width: 36px; display: flex; flex-direction: column; align-items: center; gap: 14px; z-index: 6; color: #6f7a85; }
+  #menu-root .play-side .side-icon { width: 22px; height: 22px; display: grid; place-items: center; cursor: pointer; transition: color .15s; }
+  #menu-root .play-side .side-icon:hover { color: #d8dde3; }
+  #menu-root .play-side .side-icon svg { width: 16px; height: 16px; }
+  #menu-root .bottom-right-panel { position: absolute; right: 12px; bottom: 12px; display: flex; flex-direction: column; gap: 6px; z-index: 6; }
+  #menu-root .brp-icon { width: 28px; height: 28px; display: grid; place-items: center; background: rgba(10,14,18,0.6); border: 1px solid rgba(255,255,255,0.08); border-radius: 3px; cursor: pointer; color: #8e98a3; transition: color .15s, border-color .15s; }
+  #menu-root .brp-icon:hover { color: #d8dde3; border-color: rgba(79,166,74,0.4); }
+  #menu-root .brp-icon svg { width: 14px; height: 14px; }
+
+  /* toast + friends rail */
+  #menu-root .mm-toast { position: fixed; top: 56px; left: 50%; transform: translateX(-50%); background: #0d1117; border: 1px solid rgba(79,166,74,0.35); color: #e6ecf2; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; padding: 8px 16px; border-radius: 3px; z-index: 300; opacity: 0; visibility: hidden; transition: opacity .15s, visibility .15s; pointer-events: none; white-space: nowrap; }
+  #menu-root .mm-toast.show { opacity: 1; visibility: visible; }
+  #menu-root .friends { position: absolute; top: 44px; right: 0; bottom: 0; z-index: 6; width: 56px; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 0; background: rgba(10,14,18,0.35);
+    background-image: repeating-radial-gradient(circle at 50% 20%, rgba(255,255,255,0.03) 0 1px, transparent 1px 18px), repeating-radial-gradient(circle at 50% 80%, rgba(255,255,255,0.02) 0 1px, transparent 1px 24px);
+    -webkit-backdrop-filter: blur(14px) saturate(120%); backdrop-filter: blur(14px) saturate(120%); border-left: 1px solid rgba(0,0,0,0.6); box-shadow: inset 1px 0 0 rgba(255,255,255,0.05), -2px 0 12px rgba(0,0,0,0.35); }
+  #menu-root .rail-profile { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0 10px; color: #d8dde3; cursor: pointer; transition: color .15s; }
+  #menu-root .rail-profile:hover { color: #fff; }
+  #menu-root .rail-profile svg { width: 20px; height: 20px; display: block; }
+  #menu-root .rail-profile .p-lvl { font-size: 9px; font-weight: 700; color: #a8b1ba; letter-spacing: .5px; }
+  #menu-root .rail-spacer { flex: 1; }
+</style>
 </head>
 <body>
   <div id="loadingscreen">
@@ -1366,6 +1522,352 @@ window.__cs2UiScale = function () {
     <div id="menufoot"><a href="./about.html" target="_blank" rel="noopener">About</a><a href="./terms.html" target="_blank" rel="noopener">Terms</a><a href="./privacy.html" target="_blank" rel="noopener">Privacy</a><a href="./partners.html" target="_blank" rel="noopener">Partners</a><a href="./contact.html" target="_blank" rel="noopener">Contact</a></div>
   </footer>
 <div id="vignette"></div>
-  <script type="module" src="./src/main.js"></script>
+
+<div id="menu-root">
+  <div class="mm-bg"></div>
+  <div class="mm-app">
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="icon-btn active" id="mmHomeBtn" title="Home">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/></svg>
+        </div>
+        <div class="icon-btn mm-soon" title="Inventory">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="14" rx="1"/><path d="M3 10h18"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>
+        </div>
+        <div class="icon-btn" id="mmSettingsBtn" title="Settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </div>
+      </div>
+      <div class="nav">
+        <div class="nav-tab mm-soon">INVENTORY</div>
+        <div class="nav-tab mm-soon">LOADOUT</div>
+        <div class="nav-tab active" id="mmPlayTab">PLAY</div>
+        <div class="nav-tab mm-soon">STORE</div>
+        <div class="nav-tab mm-soon">NEWS</div>
+      </div>
+      <div class="topbar-right"><div class="user-btn" title="Profile"><span class="user-square"></span></div></div>
+    </div>
+
+    <div class="main-content">
+      <div class="placeholder-content" id="mmHome">BETTERCLUTCHER.IO</div>
+
+      <!-- ===== SETTINGS VIEW ===== -->
+      <div class="view settings-view" id="mmSettingsView">
+        <div class="settings-header-top">
+          <div class="header-tab active" data-mmtab="game">GAME</div>
+          <div class="header-tab" data-mmtab="video">VIDEO</div>
+          <div class="header-tab" data-mmtab="audio">AUDIO</div>
+          <div class="header-tab" data-mmtab="community">COMMUNITY</div>
+          <button class="header-close" id="mmSettingsClose" title="Close">✕</button>
+        </div>
+        <div class="settings-header-sub" id="mmGameSubs">
+          <div class="sub-tab active" data-mmsub="hud">HUD</div>
+          <div class="sub-tab" data-mmsub="team">TEAM</div>
+          <div class="sub-tab" data-mmsub="comm">COMMUNICATION</div>
+          <div class="sub-tab" data-mmsub="crosshair">CROSSHAIR</div>
+        </div>
+        <div class="settings-content">
+
+          <!-- GAME tab -->
+          <div class="mm-stab" data-mmtab="game">
+            <div class="settings-section">Game</div>
+            <div class="setting-row" data-mm="name">
+              <span class="setting-label">Player Name</span>
+              <div class="setting-control"><input class="mm-name" id="mmName" maxlength="20" spellcheck="false" autocomplete="off"></div>
+            </div>
+            <div class="setting-row" data-mm="sens">
+              <span class="setting-label">Sensitivity</span>
+              <div class="setting-control"><input type="range" class="mm-range" id="mmSens"><span class="setting-value" id="mmSensVal"></span></div>
+            </div>
+            <div class="setting-row" data-mm="zoomsens">
+              <span class="setting-label">Zoom Sensitivity</span>
+              <div class="setting-control"><input type="range" class="mm-range" id="mmZoomSens"><span class="setting-value" id="mmZoomSensVal"></span></div>
+            </div>
+            <div class="setting-row" data-mm="devconsole" title="Takes effect the next time the game is loaded">
+              <span class="setting-label">Enable Developer Console (~)</span>
+              <div class="setting-control"><div class="fake-select" id="mmDevConsole" style="min-width:60px;">NO</div></div>
+            </div>
+
+            <div class="settings-section" data-sub="hud">HUD</div>
+            <div class="setting-row disabled" data-sub="hud"><span class="setting-label">HUD Scale</span><div class="setting-control"><input type="range" class="mm-range" min="50" max="150" value="100" disabled><span class="setting-value">1.00</span></div></div>
+            <div class="setting-row disabled" data-sub="hud"><span class="setting-label">HUD Color</span><div class="setting-control"><div class="fake-select" style="min-width:110px;">TEAM COLOR</div></div></div>
+
+            <div class="settings-section" data-sub="team">Team</div>
+            <div class="setting-row disabled" data-sub="team"><span class="setting-label">Show Teammate Loadout</span><div class="setting-control"><div class="fake-select" style="min-width:60px;">YES</div></div></div>
+            <div class="setting-row disabled" data-sub="team"><span class="setting-label">Team Radar Opacity</span><div class="setting-control"><input type="range" class="mm-range" min="0" max="100" value="80" disabled><span class="setting-value">80%</span></div></div>
+
+            <div class="settings-section" data-sub="comm">Communication</div>
+            <div class="setting-row disabled" data-sub="comm"><span class="setting-label">Radio Announcements</span><div class="setting-control"><div class="fake-select" style="min-width:60px;">ON</div></div></div>
+            <div class="setting-row disabled" data-sub="comm"><span class="setting-label">Chat Fade Time</span><div class="setting-control"><input type="range" class="mm-range" min="1" max="20" value="8" disabled><span class="setting-value">8s</span></div></div>
+
+            <div class="settings-section" data-sub="crosshair">Crosshair</div>
+            <div class="setting-row" data-sub="crosshair" data-mm="xh-style"><span class="setting-label">Crosshair Style</span><div class="setting-control"><div class="fake-select" data-xh="style" data-opts="[0,1]" data-labels='["DYNAMIC","CLASSIC STATIC"]'></div></div></div>
+            <div class="setting-row" data-sub="crosshair" data-mm="xh-dot"><span class="setting-label">Center Dot</span><div class="setting-control"><div class="fake-select" data-xh="dot" data-opts="[0,1]" data-labels='["NO","YES"]'></div></div></div>
+            <div class="setting-row" data-sub="crosshair" data-mm="xh-len"><span class="setting-label">Length</span><div class="setting-control"><input type="range" class="mm-range" data-xh="len" min="0" max="30" step="1"><span class="setting-value" data-xhval="len"></span></div></div>
+            <div class="setting-row" data-sub="crosshair" data-mm="xh-thick"><span class="setting-label">Thickness</span><div class="setting-control"><input type="range" class="mm-range" data-xh="thick" min="1" max="6" step="1"><span class="setting-value" data-xhval="thick"></span></div></div>
+            <div class="setting-row" data-sub="crosshair" data-mm="xh-gap"><span class="setting-label">Gap</span><div class="setting-control"><input type="range" class="mm-range" data-xh="gap" min="-5" max="20" step="1"><span class="setting-value" data-xhval="gap"></span></div></div>
+            <div class="setting-row" data-sub="crosshair" data-mm="xh-outline"><span class="setting-label">Outline</span><div class="setting-control"><div class="fake-select" data-xh="outline" data-opts="[0,1]" data-labels='["NO","YES"]'></div></div></div>
+            <div class="setting-row" data-sub="crosshair" data-mm="xh-outw"><span class="setting-label">Outline Width</span><div class="setting-control"><input type="range" class="mm-range" data-xh="outw" min="1" max="3" step="1"><span class="setting-value" data-xhval="outw"></span></div></div>
+            <div class="setting-row" data-sub="crosshair" data-mm="xh-color"><span class="setting-label">Color</span><div class="setting-control"><div class="fake-select" data-xh="color" data-opts="[0,1,2,3,4,5]" data-labels='["WHITE","GREEN","CYAN","YELLOW","PINK","CUSTOM"]'></div></div></div>
+            <div class="setting-row" data-sub="crosshair" data-mm="xh-r"><span class="setting-label">Custom Red</span><div class="setting-control"><input type="range" class="mm-range" data-xh="r" min="0" max="255" step="1"><span class="setting-value" data-xhval="r"></span></div></div>
+            <div class="setting-row" data-sub="crosshair" data-mm="xh-g"><span class="setting-label">Custom Green</span><div class="setting-control"><input type="range" class="mm-range" data-xh="g" min="0" max="255" step="1"><span class="setting-value" data-xhval="g"></span></div></div>
+            <div class="setting-row" data-sub="crosshair" data-mm="xh-b"><span class="setting-label">Custom Blue</span><div class="setting-control"><input type="range" class="mm-range" data-xh="b" min="0" max="255" step="1"><span class="setting-value" data-xhval="b"></span></div></div>
+            <div class="setting-row" data-sub="crosshair" data-mm="xh-alpha"><span class="setting-label">Alpha</span><div class="setting-control"><input type="range" class="mm-range" data-xh="alpha" min="0" max="255" step="1"><span class="setting-value" data-xhval="alpha"></span></div></div>
+            <div class="setting-row" data-sub="crosshair" data-mm="xh-sniper"><span class="setting-label">Sniper Line Width</span><div class="setting-control"><input type="range" class="mm-range" data-xh="sniper" min="1" max="6" step="1"><span class="setting-value" data-xhval="sniper"></span></div></div>
+            <div class="setting-row" data-sub="crosshair" data-mm="xh-snipehide"><span class="setting-label">Hide Crosshair on Unscoped Sniper</span><div class="setting-control"><div class="fake-select" data-xh="snipehide" data-opts="[0,1]" data-labels='["NO","YES"]'></div></div></div>
+            <div class="setting-row" data-sub="crosshair" data-mm="xh-hit"><span class="setting-label">Hitmarker</span><div class="setting-control"><div class="fake-select" data-xh="hit" data-opts="[0,1]" data-labels='["NO","YES"]'></div></div></div>
+          </div>
+
+          <!-- VIDEO tab -->
+          <div class="mm-stab" data-mmtab="video" style="display:none;">
+            <div class="settings-section">Video</div>
+            <div class="setting-row" data-mm="quality"><span class="setting-label">Quality Preset</span><div class="setting-control"><div class="fake-select" data-mmset="quality" data-opts='["low","medium","high"]' data-labels='["LOW","MEDIUM","HIGH"]'></div></div></div>
+            <div class="setting-row" data-mm="fpscap"><span class="setting-label">FPS Limit</span><div class="setting-control"><div class="fake-select" data-mmset="fpscap" data-opts="[0,240,165,144,120,60]" data-labels='["UNLIMITED","240","165","144","120","60"]'></div></div></div>
+            <div class="setting-row" data-mm="shadows"><span class="setting-label">Shadows</span><div class="setting-control"><div class="fake-select" data-mmset="shadows" data-opts='["off","low","high"]' data-labels='["OFF","LOW","HIGH"]'></div></div></div>
+            <div class="setting-row" data-mm="aa"><span class="setting-label">Anti-Aliasing</span><div class="setting-control"><div class="fake-select" data-mmset="aa" data-opts='["off","fxaa","msaa"]' data-labels='["OFF","FXAA","MSAA"]'></div></div></div>
+            <div class="setting-row" data-mm="bloom"><span class="setting-label">Bloom</span><div class="setting-control"><div class="fake-select" data-mmset="bloom" data-opts="[0,1]" data-labels='["OFF","ON"]'></div></div></div>
+            <div class="setting-row" data-mm="aniso"><span class="setting-label">Anisotropic Filtering</span><div class="setting-control"><div class="fake-select" data-mmset="aniso" data-opts="[1,2,4,8,16]" data-labels='["1x","2x","4x","8x","16x"]'></div></div></div>
+            <div class="setting-row" data-mm="autotier" title="Applies the next time the game is loaded"><span class="setting-label">Automatic Performance Tier</span><div class="setting-control"><div class="fake-select" data-mmset="autotier" data-opts="[1,0]" data-labels='["ON","OFF"]'></div></div></div>
+            <div class="setting-row" data-mm="showfps"><span class="setting-label">Show FPS Counter</span><div class="setting-control"><div class="fake-select" data-mmset="showfps" data-opts="[0,1]" data-labels='["NO","YES"]'></div></div></div>
+          </div>
+
+          <!-- AUDIO tab -->
+          <div class="mm-stab" data-mmtab="audio" style="display:none;">
+            <div class="settings-section">Audio</div>
+            <div class="setting-row" data-mm="volume"><span class="setting-label">Master Volume</span><div class="setting-control"><input type="range" class="mm-range" id="mmVol" min="0" max="100" step="1"><span class="setting-value" id="mmVolVal"></span></div></div>
+            <div class="setting-row disabled"><span class="setting-label">Music Volume</span><div class="setting-control"><input type="range" class="mm-range" min="0" max="100" value="40" disabled><span class="setting-value">40%</span></div></div>
+            <div class="setting-row disabled"><span class="setting-label">Announcer Volume</span><div class="setting-control"><input type="range" class="mm-range" min="0" max="100" value="70" disabled><span class="setting-value">70%</span></div></div>
+          </div>
+
+          <!-- COMMUNITY tab -->
+          <div class="mm-stab" data-mmtab="community" style="display:none;">
+            <div class="settings-section">Community</div>
+            <div class="setting-row disabled"><span class="setting-label">Accept Friend Invites</span><div class="setting-control"><div class="fake-select" style="min-width:60px;">ON</div></div></div>
+            <div class="setting-row disabled"><span class="setting-label">Share Match Results</span><div class="setting-control"><div class="fake-select" style="min-width:60px;">NO</div></div></div>
+            <div class="setting-row disabled"><span class="setting-label">In-Game Chat</span><div class="setting-control"><div class="fake-select" style="min-width:90px;">TEAM ONLY</div></div></div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ===== PLAY VIEW ===== -->
+      <div class="view play-view" id="mmPlayView">
+        <div class="play-categories">
+          <div class="cat-tab active" data-mmcat="matchmaking">MATCHMAKING</div>
+          <div class="cat-tab" data-mmcat="practice">PRACTICE</div>
+        </div>
+        <div class="play-modes">
+          <div class="mode-tab" data-locked="true">PREMIER
+            <div class="lock-tooltip"><div class="lock-tooltip-title">Game mode locked</div><div class="lock-tooltip-desc">Might not even be implemented</div></div>
+          </div>
+          <div class="mode-tab" data-locked="true">COMPETITIVE
+            <div class="lock-tooltip"><div class="lock-tooltip-title">Game mode locked</div><div class="lock-tooltip-desc">Might not even be implemented</div></div>
+          </div>
+          <div class="mode-tab" data-locked="true">WINGMAN
+            <div class="lock-tooltip"><div class="lock-tooltip-title">Game mode locked</div><div class="lock-tooltip-desc">Might not even be implemented</div></div>
+          </div>
+          <div class="mode-tab active" data-mmmode="defusal" id="mmCasualTab">CASUAL</div>
+          <div class="mode-tab" data-mmmode="dm" id="mmDeathmatchTab">DEATHMATCH</div>
+          <div class="bot-diff-wrap" id="mmBotDiffWrap">
+            <div class="bot-diff-btn" id="mmBotDiffBtn">BOT DIFFICULTY <span class="caret">▼</span></div>
+            <div class="bot-diff-menu" id="mmBotDiffMenu">
+              <div class="bot-diff-menu-header">Bot Difficulty</div>
+              <div class="bot-diff-item" data-value="0"><span>Very Easy</span><span class="check">✓</span></div>
+              <div class="bot-diff-item" data-value="1"><span>Easy</span><span class="check">✓</span></div>
+              <div class="bot-diff-item" data-value="2"><span>Medium</span><span class="check">✓</span></div>
+              <div class="bot-diff-item" data-value="3"><span>Hard</span><span class="check">✓</span></div>
+              <div class="bot-diff-item" data-value="4"><span>Very Hard</span><span class="check">✓</span></div>
+              <div class="bot-diff-item" data-value="5"><span>Expert</span><span class="check">✓</span></div>
+            </div>
+          </div>
+          <div class="bots-stepper" id="mmBotsWrap">
+            <span>BOTS</span>
+            <span class="step-btn" id="mmBotsMinus">−</span>
+            <span id="mmBotsVal">10</span>
+            <span class="step-btn" id="mmBotsPlus">+</span>
+          </div>
+        </div>
+        <div class="map-grid">
+          <div class="map-col sel" data-map="dusker">
+            <div class="map-body"><div class="map-big-icon"><span>DESERT<br>TOWN</span></div></div>
+            <div class="map-footer">Desert Town</div>
+          </div>
+          <div class="map-col" data-map="oasis">
+            <div class="map-body"><div class="map-big-icon"><span>PALACE</span></div></div>
+            <div class="map-footer">Palace</div>
+          </div>
+        </div>
+        <div class="play-bottom">
+          <button class="go-btn" id="mmGoBtn">
+            <div class="texture">
+              <svg viewBox="0 0 260 80" preserveAspectRatio="none">
+                <defs>
+                  <filter id="mm-bacteria" x="-20%" y="-20%" width="140%" height="140%">
+                    <feTurbulence type="fractalNoise" baseFrequency="0.02 0.045" numOctaves="3" seed="7" result="n"/>
+                    <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.04  0 0 0 0 0.7  0 0 0 0 0.12  0 0 0 1.8 -0.55" result="colored"/>
+                  </filter>
+                  <filter id="mm-bacteriaSoft" x="-40%" y="-40%" width="180%" height="180%">
+                    <feTurbulence type="fractalNoise" baseFrequency="0.02 0.045" numOctaves="3" seed="7" result="n"/>
+                    <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.04  0 0 0 0 0.7  0 0 0 0 0.12  0 0 0 1.8 -0.55" result="colored"/>
+                    <feGaussianBlur in="colored" stdDeviation="3.2"/>
+                  </filter>
+                  <linearGradient id="mm-clarityMask" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stop-color="#000"/><stop offset="30%" stop-color="#fff"/><stop offset="70%" stop-color="#fff"/><stop offset="100%" stop-color="#000"/>
+                  </linearGradient>
+                  <linearGradient id="mm-smokeMask" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stop-color="#fff"/><stop offset="30%" stop-color="#000"/><stop offset="70%" stop-color="#000"/><stop offset="100%" stop-color="#fff"/>
+                  </linearGradient>
+                  <mask id="mm-clearMask"><rect width="260" height="80" fill="url(#mm-clarityMask)"/></mask>
+                  <mask id="mm-softMask"><rect width="260" height="80" fill="url(#mm-smokeMask)"/></mask>
+                </defs>
+                <rect width="260" height="80" fill="#146b14"/>
+                <rect width="260" height="80" filter="url(#mm-bacteriaSoft)" opacity="0.5" mask="url(#mm-softMask)"/>
+                <rect width="260" height="80" filter="url(#mm-bacteria)" opacity="0.6" mask="url(#mm-clearMask)"/>
+                <rect x="150" y="14" width="16" height="16" fill="#1a8a1a" opacity="0.55"/>
+              </svg>
+            </div>
+            <span class="label">GO</span>
+          </button>
+        </div>
+        <div class="play-side">
+          <div class="side-icon" title="Info">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+          </div>
+        </div>
+        <div class="bottom-right-panel">
+          <div class="brp-icon mm-soon" title="Steam">
+            <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
+          </div>
+          <div class="brp-icon mm-soon" title="Chat">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="friends">
+    <div class="rail-profile" title="Profile">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>
+      <span class="p-lvl">8</span>
+    </div>
+    <div class="rail-spacer"></div>
+  </div>
+
+  <div class="mm-toast" id="mmToast"></div>
+</div>
+
+<script>
+  // Main menu shell: pure view switching only. All game-facing wiring (start
+  // match, settings persistence, live applies) lives in hud.js _wireMainMenu().
+  (function () {
+    var root = document.getElementById('menu-root');
+    if (!root) return;
+    var homeBtn = document.getElementById('mmHomeBtn');
+    var settingsBtn = document.getElementById('mmSettingsBtn');
+    var playTab = document.getElementById('mmPlayTab');
+    var homeView = document.getElementById('mmHome');
+    var settingsView = document.getElementById('mmSettingsView');
+    var playView = document.getElementById('mmPlayView');
+    var closeBtn = document.getElementById('mmSettingsClose');
+    var toast = document.getElementById('mmToast');
+    var toastT = 0;
+
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      clearTimeout(toastT);
+      toastT = setTimeout(function () { toast.classList.remove('show'); }, 1600);
+    }
+    root._showToast = showToast;
+
+    function hideViews() {
+      settingsView.classList.remove('open');
+      playView.classList.remove('open');
+      homeView.style.display = 'none';
+    }
+    function setActiveIcon(which) {
+      homeBtn.classList.remove('active');
+      settingsBtn.classList.remove('active');
+      if (which === 'settings') settingsBtn.classList.add('active');
+      else homeBtn.classList.add('active');
+    }
+    function showHome() {
+      hideViews();
+      homeView.style.display = 'flex';
+      setActiveIcon('home');
+    }
+    function openSettings() {
+      hideViews();
+      settingsView.classList.add('open');
+      setActiveIcon('settings');
+    }
+    function openPlay() {
+      hideViews();
+      playView.classList.add('open');
+      setActiveIcon('home');
+    }
+    root._openPlay = openPlay;
+    root._openSettings = openSettings;
+    root._showHome = showHome;
+
+    homeBtn.addEventListener('click', function (e) { e.stopPropagation(); showHome(); });
+    settingsBtn.addEventListener('click', function (e) { e.stopPropagation(); openSettings(); });
+    playTab.addEventListener('click', function (e) { e.stopPropagation(); openPlay(); });
+    closeBtn.addEventListener('click', function () { showHome(); });
+
+    // settings header tabs
+    var headerTabs = root.querySelectorAll('.header-tab[data-mmtab]');
+    headerTabs.forEach(function (t) {
+      t.addEventListener('click', function () {
+        headerTabs.forEach(function (x) { x.classList.remove('active'); });
+        t.classList.add('active');
+        var tab = t.dataset.mmtab;
+        root.querySelectorAll('.mm-stab').forEach(function (s) {
+          s.style.display = s.dataset.mmtab === tab ? '' : 'none';
+        });
+        // sub-tab strip only exists on the GAME tab
+        document.getElementById('mmGameSubs').style.display = tab === 'game' ? 'flex' : 'none';
+      });
+    });
+    // game sub-tabs filter the GAME tab's grouped sections
+    var subTabs = root.querySelectorAll('#mmGameSubs .sub-tab');
+    subTabs.forEach(function (t) {
+      t.addEventListener('click', function () {
+        subTabs.forEach(function (x) { x.classList.remove('active'); });
+        t.classList.add('active');
+        applySub(t.dataset.mmsub);
+      });
+    });
+    function applySub(sub) {
+      // sections + rows tagged data-sub switch; untagged rows (Game/Controls) always show
+      root.querySelectorAll('#mmSettingsView [data-sub]').forEach(function (el) {
+        el.style.display = el.dataset.sub === sub ? '' : 'none';
+      });
+    }
+    applySub('hud');
+
+    // "coming soon" placeholders
+    root.querySelectorAll('.mm-soon').forEach(function (el) {
+      el.addEventListener('click', function (e) {
+        e.stopPropagation();
+        showToast('COMING SOON');
+      });
+    });
+
+    // Escape cascade (only while the menu is open)
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape' || !root.classList.contains('open')) return;
+      var diffMenu = document.getElementById('mmBotDiffMenu');
+      if (diffMenu && diffMenu.classList.contains('open')) {
+        diffMenu.classList.remove('open');
+        return;
+      }
+      if (settingsView.classList.contains('open') || playView.classList.contains('open')) showHome();
+    });
+  })();
+</script>
+
+<script type="module" src="./src/main.js"></script>
 </body>
 </html>

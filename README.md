@@ -10,5 +10,5 @@ main.js - 36,939 lines as of now
 
 
 
-https://www.mediafire.com/file/bse9f3vw40qafng/clutcher\_io\_fuckraf.7z/file - password fuckraf
+
 
