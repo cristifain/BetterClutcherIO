@@ -1236,3 +1236,93 @@ function cc(e, t, n) {
   return e < t ? t : e > n ? n : e
 }
 export { Qs, nc, rc, Ms, ec, ic };
+
+// ============================================================================
+// Per-player first-person viewmodel (multiplayer / netcode integration).
+// Appended additively: the game's own viewmodel class (ic) above is untouched.
+// - The LOCAL player's viewmodel is attached to the local camera only.
+// - Remote players never get a viewmodel; they render their world body only
+//   (netcode.js drives spawnRemotePlayer/applyRemoteUpdate for those).
+// - Hidden by default: netcode.js shows it via setViewModelVisible(true) when
+//   the local player spawns into an online match.
+// ============================================================================
+
+var pvm = {
+  root: null,
+  camera: null,
+  scene: null,
+  bobT: 0,
+  bobAmt: 0,
+  recoil: 0,
+  recoilV: 0,
+  swayX: 0,
+  swayY: 0,
+  prevYaw: 0,
+  prevPitch: 0
+};
+
+function pvmWrap(e, t, n) {
+  let r = (n - e) % 6.283185307179586;
+  return r > Math.PI ? r - 6.283185307179586 : r < -Math.PI ? r + 6.283185307179586 : r
+}
+
+function initViewModel(scene, camera) {
+  if (pvm.root) {
+    return pvm.root
+  }
+  pvm.scene = scene, pvm.camera = camera;
+  let r = new h;
+  r["name"] = "netcode_viewmodel";
+  // simple procedural carbine built from the same primitive helpers (G/K) as
+  // the game viewmodels above; classic right-hand base offset
+  G(r, .05, .085, .42, U, [0x0, .02, -.16]);
+  K(r, .016, .016, .3, U, [0x0, .03, -.44], "z", 8);
+  G(r, .044, .14, .07, U, [0x0, -.06, .02], [.12, 0x0, 0x0]);
+  G(r, .05, .03, .1, U, [0x0, .075, -.06]);
+  K(r, .022, .022, .16, 0x191c1f, [0x0, .03, -.62], "z", 8);
+  G(r, .012, .026, .04, W, [0x0, .09, -.16]);
+  G(r, .036, .026, .12, 0x2e343c, [0x0, -.005, .09]);
+  r["position"]["set"](.27, -.26, -.55), r["visible"] = pvm.visible;
+  camera["add"](r);
+  // a camera-attached object only renders when the camera is in the scene graph
+  scene && !camera.parent && scene.add(camera);
+  return pvm.root = r, r
+}
+
+// state: { vx, vz, onGround, yaw, pitch, recoil } - speeds in units/sec, yaw
+// and pitch in radians, recoil is a per-shot impulse (call with 0 otherwise).
+function updateViewModel(dt, state) {
+  if (!pvm.root) {
+    return
+  }
+  dt = Math.min(.1, Math.max(.001, dt)), state = state || {};
+  let e = Math.hypot(state.vx || 0x0, state.vz || 0x0);
+  let t = state.onGround !== !0x1 ? 1 : 0;
+  let n = Math.min(1, e / 5.2) * t;
+  pvm.bobAmt += (n - pvm.bobAmt) * Math.min(1, dt * 8);
+  pvm.bobT += dt * (4 + e * 1.6);
+  let r = Math.sin(pvm.bobT * 2) * .012 * pvm.bobAmt;
+  let i = Math.cos(pvm.bobT) * .009 * pvm.bobAmt;
+  let a = state.yaw || 0x0, o = state.pitch || 0x0;
+  let s = Math.max(-.03, Math.min(.03, pvmWrap(pvm.prevYaw, a)));
+  let c = Math.max(-.03, Math.min(.03, pvmWrap(pvm.prevPitch, o)));
+  pvm.prevYaw = a, pvm.prevPitch = o;
+  pvm.swayX += (s - pvm.swayX) * Math.min(1, dt * 10);
+  pvm.swayY += (c - pvm.swayY) * Math.min(1, dt * 10);
+  state.recoil && (pvm.recoilV += state.recoil, pvm.recoil > .2 && (pvm.recoil = .2));
+  pvm.recoilV -= (pvm.recoil * 500 + pvm.recoilV * 30) * dt;
+  pvm.recoil = Math.max(0, pvm.recoil + pvm.recoilV * dt);
+  let l = pvm.recoil;
+  pvm.root["position"]["set"](.27 + i + pvm.swayX, -.26 + r - pvm.swayY * .5 - l * .3, -.55 + l);
+  pvm.root["rotation"]["set"](l * 1.6 + pvm.swayY, pvm.swayX * 2, 0x0)
+}
+
+function getViewModel() {
+  return pvm.root
+}
+
+function setViewModelVisible(v) {
+  pvm.visible = !!v, pvm.root && (pvm.root["visible"] = pvm.visible)
+}
+
+export { initViewModel, updateViewModel, getViewModel, setViewModelVisible };
