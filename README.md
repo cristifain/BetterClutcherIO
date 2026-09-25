@@ -6,9 +6,5 @@ Based on clutcher.io - GITHUB DONT DMCA TAKE THIS DOWN, THE ORIGINAL OWNER OF TH
 
 
 
-main.js - 36,939 lines as of now
-
-
-
-
+main.js - 32,519 lines as of now
 

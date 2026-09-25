@@ -10,7 +10,7 @@ import { A as t, A as mmCyl, H as mmGroup, Ht as mmVec, it as mmBasic, kt as mmS
 import { initMultiplayer, requestMatch } from "./netcode.js";
 import { onGameShot } from "./pviewmodel.js";
 import { rayPointDist, WS_BASE } from "./shared.js";
-import { $m, Ar, Av, Ba, Bm, Cr, Cs, Cv, Dr, Dv, Er, Ev, Fm, Fu, Gm, H, Iu, Km, Lu, Mo, Mu, Mv, Nu, Ov, Pu, Qg, Ru, Sv, Tr, Tv, Um, V, V_, Va, Xm, Z, __p_KGFS_MAIN_STR, __p_V5bL_array, __p_nino_bufferToString, _s, as, br, bv, eh, gs, ju, jv, kr, ku, kv, ps, qm, th, wv, xr, xv, yr, ys, zm } from "./main.js";
+import { $m, Ar, Av, Ba, Bm, Cr, Cs, Cv, Dr, Dv, Er, Ev, Fm, Fu, Gm, H, Iu, Km, Lu, Mo, Mu, Mv, Nu, Ov, Pu, Qg, Ru, Sv, Tr, Tv, Um, V, V_, Va, Xm, Z, __p_KGFS_MAIN_STR, __p_V5bL_array, __p_nino_bufferToString, _s, as, br, bv, eh, gs, ju, jv, kr, ku, kv, ps, qm, th, wv, wm, xr, xv, yr, ys, zm } from "./main.js";
 
 var Nv = class e {
   constructor(e) {
@@ -1991,16 +1991,32 @@ var Nv = class e {
       } catch {}
     };
 
-    function marker(e) {
-      let t = new mmGroup;
-      t["name"] = "mremote_" + e;
-      let n = new mmStdMat({ color: 0xc05040 });
-      t["userData"]["mat"] = n;
-      let r = new mmMesh(new mmCyl(.3, .3, 1.5, 10), n);
-      r["position"]["y"] = .75, t["add"](r);
-      let i = new mmMesh(new mmSphere(.22, 10, 8), n);
-      i["position"]["y"] = 1.62, t["add"](i);
-      return t
+    function marker(e, t) {
+      // remote player record: a capsule fallback spawned instantly, upgraded
+      // to a real team CS2 agent rig (the same models the bots use) as soon
+      // as wm() can build one
+      let n = new mmGroup;
+      n["name"] = "mremote_" + e;
+      let r = new mmStdMat({ color: t && t.team === "CT" ? 0x4a6890 : t && t.team === "T" ? 0xa8814a : 0xc05040 });
+      n["userData"]["mat"] = r;
+      let i = new mmMesh(new mmCyl(.3, .3, 1.5, 10), r);
+      i["position"]["y"] = .75, n["add"](i);
+      let a = new mmMesh(new mmSphere(.22, 10, 8), r);
+      a["position"]["y"] = 1.62, n["add"](a);
+      return {
+        ["id"]: e,
+        ["obj"]: n,
+        ["group"]: n,
+        ["agent"]: null,
+        ["team"]: t && t.team,
+        ["weapon"]: t && t.weapon || "ak47",
+        ["hp"]: t && t.hp == null ? 100 : t.hp,
+        ["tries"]: 0,
+        ["lastT"]: 0,
+        ["lastX"]: t && t.x || 0,
+        ["lastZ"]: t && t.z || 0,
+        ["goneAt"]: null
+      }
     }
 
     function setTeamColor(e, t) {
@@ -2008,54 +2024,108 @@ var Nv = class e {
       n && n["color"]["setHex"](t === "CT" ? 0x4a6890 : t === "T" ? 0xa8814a : 0xc05040)
     }
 
+    function tryAgent(e) {
+      // upgrade the capsule to a real team CS2 agent rig (the bots' models)
+      if (e["agent"] || e["tries"] >= 3) return;
+      e["tries"]++;
+      let t = null;
+      try {
+        t = wm(e["team"] === "T" ? "T" : "CT")
+      } catch {}
+      if (!t) return;
+      let n = e["group"];
+      while (n["children"]["length"]) n["remove"](n["children"][0]);
+      t["root"]["visible"] = !0x0, n["add"](t["root"]), e["agent"] = t, e["obj"] = t["root"];
+      try {
+        t["setWeapon"] && t["setWeapon"](e["weapon"])
+      } catch {}
+    }
+
     self["_mmNet"] = initMultiplayer({
       scene: game["scene"],
       camera: game["camera"],
       getPlayerTransform: () => {
         let e = game["player"];
-        return { x: e["x"], y: e["y"], z: e["z"], ry: e["yaw"], pitch: e["pitch"], onGround: e["onGround"], team: e["team"], kills: e["kills"] || 0 }
+        return { x: e["x"], y: e["y"], z: e["z"], ry: e["yaw"], pitch: e["pitch"], onGround: e["onGround"], team: e["team"], kills: e["kills"] || 0, weapon: game["weapons"] && game["weapons"]["current"] || "ak47" }
       },
       canSendState: () => game["state"] === "playing" && !!game["player"]["alive"],
       spawnRemotePlayer: (e, t) => {
-        let n = marker(e);
-        n["position"]["set"](t.x || 0, t.y || 0, t.z || 0), n["rotation"]["y"] = t.ry || 0, setTeamColor(n, t.team), game["scene"]["add"](n), markers.set(e, n), roster.set(e, { team: t.team, alive: (t.hp == null ? 100 : t.hp) > 0, hp: t.hp == null ? 100 : t.hp, kills: t.kills || 0, name: "P" + String(e)["slice"](-4) }), pushRoster()
+        if (markers.has(e)) {
+          let o = markers.get(e);
+          o["goneAt"] = null, o["hp"] = t.hp == null ? 100 : t.hp, o["obj"]["visible"] = o["hp"] > 0;
+          return
+        }
+        let n = marker(e, t);
+        n["obj"]["position"]["set"](t.x || 0, t.y || 0, t.z || 0), setTeamColor(n.group, t.team), tryAgent(n), game["scene"]["add"](n["obj"]), markers.set(e, n), roster.set(e, { team: t.team, alive: (t.hp == null ? 100 : t.hp) > 0, hp: t.hp == null ? 100 : t.hp, kills: t.kills || 0, name: "P" + String(e)["slice"](-4) }), pushRoster()
       },
       applyRemoteUpdate: (e, t) => {
-        // self-heal: a state update ALWAYS guarantees a visible marker and a
+        // self-heal: a state update ALWAYS guarantees a visible player and a
         // roster entry, even if the join/welcome event was missed (reconnect,
         // scene rebuild, timing)
         let n = markers.get(e);
         if (!n) {
-          n = marker(e);
-          setTeamColor(n, t.team);
-          n["position"]["set"](t.x || 0, t.y || 0, t.z || 0), n["rotation"]["y"] = t.ry || 0;
-          game["scene"]["add"](n), markers.set(e, n);
-          if (!roster.has(e)) roster.set(e, { team: t.team, alive: !0, hp: t.hp == null ? 100 : t.hp, kills: t.kills || 0, name: "P" + String(e)["slice"](-4) });
-          pushRoster();
-          try { console.log("[mm] materialized marker for", e) } catch {}
+          spawnRemotePlayer(e, t);
+          n = markers.get(e);
+          try { console.log("[mm] materialized player for", e) } catch {}
         }
-        // self-heal: map loads can rebuild the scene and detach our markers
-        if (n.parent !== game["scene"]) game["scene"]["add"](n);
+        // self-heal: map loads can rebuild the scene and detach our players
+        if (n["obj"]["parent"] !== game["scene"]) game["scene"]["add"](n["obj"]);
         if (!n.userData.got1) {
           n.userData.got1 = true;
           try { console.log("[mm] applying first update for", e, t.x, t.y, t.z) } catch {}
         }
-        n["position"]["set"](t.x, t.y, t.z), n["rotation"]["y"] = t.ry || 0, t.team && n["userData"]["team"] !== t.team && (n["userData"]["team"] = t.team, setTeamColor(n, t.team));
-        let r = roster.get(e);
-        if (r) {
-          let i = !1;
-          if (t.team && r.team !== t.team) {
-            r.team = t.team, i = !0
+        n["hp"] = t.hp == null ? n["hp"] : t.hp, n["obj"]["visible"] = n["hp"] > 0;
+        // team change -> recolor capsule / swap the agent rig to the new team
+        if (t.team && n["team"] !== t.team) {
+          n["team"] = t.team, setTeamColor(n.group, t.team);
+          if (n["agent"]) {
+            game["scene"]["remove"](n["obj"]), n["agent"] = null, n["tries"] = 0, n["obj"] = n["group"], game["scene"]["add"](n["group"])
           }
-          if (t.kills != null && r.kills !== t.kills) {
-            r.kills = t.kills, i = !0
+          tryAgent(n)
+        }
+        // weapon change -> arm the rig
+        if (t.weapon && n["weapon"] !== t.weapon) {
+          n["weapon"] = t.weapon;
+          try {
+            n["agent"] && n["agent"]["setWeapon"] && n["agent"]["setWeapon"](t.weapon)
+          } catch {}
+        }
+        tryAgent(n);
+        // drive the rig: transform + locomotion from the interpolated position
+        let r = performance.now();
+        let i = n["lastT"] ? Math.max(.016, (r - n["lastT"]) / 1000) : .05;
+        let a = (t.x - n["lastX"]) / i;
+        let o = (t.z - n["lastZ"]) / i;
+        n["lastT"] = r, n["lastX"] = t.x, n["lastZ"] = t.z;
+        if (n["agent"]) {
+          try {
+            let s = game["physics"] ? game["physics"]["groundHeight"](t.x, t.y + 1.2, t.z) : t.y;
+            (s = s > -20 ? s : t.y) && n["agent"]["setTransform"](t.x, s, t.z, t.ry || 0), n["agent"]["update"](i, { vx: a, vz: o, airborne: !1, crouch: 0, pitch: t.pitch || 0 })
+          } catch {}
+        } else {
+          n["obj"]["position"]["set"](t.x, t.y, t.z), n["obj"]["rotation"]["y"] = t.ry || 0
+        }
+        let u = roster.get(e);
+        if (!u) {
+          roster.set(e, { team: t.team, alive: n["hp"] > 0, hp: n["hp"], kills: t.kills || 0, name: "P" + String(e)["slice"](-4) }), pushRoster(), u = roster.get(e)
+        }
+        if (u) {
+          let c = !1;
+          if (t.team && u.team !== t.team) {
+            u.team = t.team, c = !0
           }
-          i && pushRoster()
+          if (t.kills != null && u.kills !== t.kills) {
+            u.kills = t.kills, c = !0
+          }
+          if (u.alive !== n["hp"] > 0) {
+            u.alive = n["hp"] > 0, c = !0
+          }
+          c && pushRoster()
         }
       },
       despawnRemotePlayer: e => {
         let t = markers.get(e);
-        t && (game["scene"]["remove"](t), markers.delete(e));
+        t && (game["scene"]["remove"](t["obj"]), markers.delete(e));
         if (roster["delete"](e)) pushRoster()
       },
       onShot: e => {
@@ -2073,7 +2143,7 @@ var Nv = class e {
           return
         }
         let n = markers.get(e.id);
-        n && (n["visible"] = e.hp > 0);
+        n && (n["hp"] = e.hp, n["obj"]["visible"] = e.hp > 0);
         let r = roster.get(e.id);
         if (r) {
           r.alive = e.hp > 0, r.hp = e.hp, pushRoster()
@@ -2086,7 +2156,7 @@ var Nv = class e {
           return
         }
         let n = markers.get(e.id);
-        n && (n["visible"] = !1);
+        n && (n["hp"] = 0, n["obj"]["visible"] = !1);
         let r = roster.get(e.id);
         if (r) {
           r.alive = !1, pushRoster()
@@ -2126,7 +2196,7 @@ var Nv = class e {
     // markers for hit detection -> sendHit (server rewinds + validates)
     self["_mmReattach"] = () => {
       for (let e of markers.values()) {
-        if (e.parent !== game["scene"]) game["scene"]["add"](e)
+        if (e["obj"]["parent"] !== game["scene"]) game["scene"]["add"](e["obj"])
       }
     };
     onGameShot(e => {

@@ -130,13 +130,8 @@ function openSocket(url, room) {
     connected = !1;
     stopLoops();
     if (intentionalClose) return;
-    // drop all remotes; the game clears meshes through the callback
-    for (let id of [...remotes.keys()]) {
-      remotes.delete(id);
-      try {
-        opts.despawnRemotePlayer(id)
-      } catch {}
-    }
+    // NOTE: remotes are NOT dropped here - a brief drop must not blink every
+    // player out. The welcome-sync after reconnect removes true leavers.
     if (!was && !roomId) {
       // quickmatch never completed: retry it (the room id is unknown)
       if (reconnects++ < 3) {
@@ -169,18 +164,29 @@ function send(o) {
 }
 
 function openRemotes(list) {
+  let ids = new Set();
   for (let p of list || []) {
-    if (!p || p.id == null || p.id === myId || remotes.has(p.id)) continue;
+    if (!p || p.id == null) continue;
+    ids.add(p.id);
+    if (p.id === myId) continue;
+    let r = remotes.get(p.id);
+    if (r) {
+      // still tracked (a brief socket drop): keep the marker, clear the flag
+      r.goneAt = null;
+      continue
+    }
     remotes.set(p.id, {
       id: p.id,
       x: p.x || 0, y: p.y || 0, z: p.z || 0, ry: p.ry || 0,
       tx: p.x || 0, ty: p.y || 0, tz: p.z || 0, ttry: p.ry || 0,
-      hp: p.hp == null ? 100 : p.hp, team: p.team, kills: p.kills || 0
+      hp: p.hp == null ? 100 : p.hp, team: p.team, kills: p.kills || 0,
+      tpitch: p.pt || 0, wpn: p.w, goneAt: null
     });
     try {
       opts.spawnRemotePlayer(p.id, { x: p.x || 0, y: p.y || 0, z: p.z || 0, ry: p.ry || 0, hp: p.hp == null ? 100 : p.hp, team: p.team, kills: p.kills || 0 })
     } catch {}
   }
+  return ids
 }
 
 function handleMsg(m) {
@@ -207,6 +213,16 @@ function handleMsg(m) {
         window.__clutcherOnlineMatch = !0
       } catch {}
       openRemotes(m.players);
+      // reconnect sync: drop only remotes that truly left while we were offline
+      let ids = new Set((m.players || []).map(p => p.id));
+      for (let id of [...remotes.keys()]) {
+        if (!ids.has(id)) {
+          remotes.delete(id);
+          try {
+            opts.despawnRemotePlayer(id)
+          } catch {}
+        }
+      }
       // latency probe: first ping right away, then every 2s (server echoes vt)
       lastRtt = null;
       send({ t: "p", vt: performance.now() });
@@ -225,8 +241,14 @@ function handleMsg(m) {
       break
     }
     case "join": {
-      if (m.id == null || m.id === myId || remotes.has(m.id)) break;
-      remotes.set(m.id, { id: m.id, x: m.x || 0, y: m.y || 0, z: m.z || 0, ry: m.ry || 0, tx: m.x || 0, ty: m.y || 0, tz: m.z || 0, ttry: m.ry || 0, hp: 100, team: m.tm });
+      if (m.id == null || m.id === myId) break;
+      let r = remotes.get(m.id);
+      if (r) {
+        // reconnect of a briefly-dropped socket: keep the existing marker
+        r.goneAt = null;
+        break
+      }
+      remotes.set(m.id, { id: m.id, x: m.x || 0, y: m.y || 0, z: m.z || 0, ry: m.ry || 0, tx: m.x || 0, ty: m.y || 0, tz: m.z || 0, ttry: m.ry || 0, hp: 100, team: m.tm, goneAt: null });
       try {
         opts.spawnRemotePlayer(m.id, { x: m.x || 0, y: m.y || 0, z: m.z || 0, ry: m.ry || 0, hp: 100, team: m.tm })
       } catch {}
@@ -234,15 +256,24 @@ function handleMsg(m) {
     }
     case "leave": {
       if (m.id == null) break;
-      remotes.delete(m.id);
-      try {
-        opts.despawnRemotePlayer(m.id)
-      } catch {}
+      let r = remotes.get(m.id);
+      if (!r) break;
+      // grace period: brief socket drops reconnect within seconds - freeze
+      // the marker instead of despawning it (anti-flicker)
+      r.goneAt = performance.now();
       break
     }
     case "s": {
       let r = remotes.get(m.id);
-      if (!r) break;
+      if (!r) {
+        // self-heal: an unknown sender's state materializes the remote (we may
+        // have joined mid-session or missed the join event)
+        r = { id: m.id, x: m.x || 0, y: m.y || 0, z: m.z || 0, ry: m.ry || 0, tx: m.x || 0, ty: m.y || 0, tz: m.z || 0, ttry: m.ry || 0, hp: 100, team: m.tm, kills: m.k || 0, tpitch: m.pt || 0, wpn: m.w, goneAt: null };
+        remotes.set(m.id, r);
+        try {
+          opts.spawnRemotePlayer(m.id, { x: r.x, y: r.y, z: r.z, ry: r.ry, hp: 100, team: m.tm, kills: m.k || 0 })
+        } catch {}
+      }
       if (!r.got1) {
         r.got1 = true;
         try { console.log("[net] first state from", m.id, m.x, m.y, m.z) } catch {}
@@ -253,6 +284,8 @@ function handleMsg(m) {
       isNum(m.ry) && (r.ttry = m.ry);
       if (m.tm === "CT" || m.tm === "T") r.team = m.tm;
       if (isNum(m.k)) r.kills = m.k;
+      isNum(m.pt) && (r.tpitch = m.pt);
+      typeof m.w == "string" && m.w && (r.wpn = m.w);
       break
     }
     case "sh": {
@@ -325,7 +358,7 @@ function sendState() {
     try { console.log("[net] first state sent", t.x, t.y, t.z) } catch {}
   }
   sendCount++;
-  send({ t: "s", x: t.x, y: t.y, z: t.z, ry: t.ry, tm: t.team, k: t.kills, vt: now })
+  send({ t: "s", x: t.x, y: t.y, z: t.z, ry: t.ry, tm: t.team, k: t.kills, pt: t.pitch, w: t.weapon, vt: now })
 }
 
 export function sendShot(ox, oy, oz, dx, dy, dz) {
@@ -352,6 +385,14 @@ function frame(now) {
   if (!connected) return;
   // interpolate every remote toward its latest sub-tick target (~15 u/s)
   for (let [rid, r] of remotes) {
+    // grace period expired: the player truly left
+    if (r.goneAt && now - r.goneAt > 3000) {
+      remotes.delete(rid);
+      try {
+        opts.despawnRemotePlayer(rid)
+      } catch {}
+      continue
+    }
     let d = Math.hypot(r.tx - r.x, r.ty - r.y, r.tz - r.z);
     if (d > 8) {
       // server jump (spawn/respawn/teleport correction): snap
@@ -365,7 +406,7 @@ function frame(now) {
     }
     try {
       // pass the MAP KEY (rid) - remote objects are keyed by id
-      opts.applyRemoteUpdate(rid, { x: r.x, y: r.y, z: r.z, ry: r.ry, hp: r.hp, team: r.team, kills: r.kills || 0 })
+      opts.applyRemoteUpdate(rid, { x: r.x, y: r.y, z: r.z, ry: r.ry, hp: r.hp, team: r.team, kills: r.kills || 0, pitch: r.tpitch || 0, weapon: r.wpn })
     } catch {}
   }
   // viewmodel: bob/sway/recoil from the local player's transform rate
