@@ -29219,9 +29219,13 @@ window["game"] = new class {
       return this["state"] === "menu" && !this["_starting"]
     };
     let t = this["_menuSel"](__p_KGFS_MAIN_STR(0x1317c, 0x9), "oasis");
-    let n = Hx[t] && Hx[t]["preload"] ? Hx[t]["preload"](this["renderer"])["catch"](() => {
-      return null
-    }) : Promise["resolve"]();
+    // preload EVERY map's assets at boot (GLB download + parse, cached per
+    // map), so joining any map skips the network download
+    let n = Promise["all"](Object["keys"](Hx)["map"](e => {
+      return Hx[e] && Hx[e]["preload"] ? Hx[e]["preload"](this["renderer"])["catch"](() => {
+        return null
+      }) : Promise["resolve"]()
+    }));
     if (await new Promise(e => {
         return setTimeout(e, 0x4b0)
       }), !e() || this["_isMobile"]) {
