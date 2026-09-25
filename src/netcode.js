@@ -211,6 +211,10 @@ function handleMsg(m) {
       send({ t: "p", vt: performance.now() });
       clearInterval(pingTimer);
       pingTimer = setInterval(() => send({ t: "p", vt: performance.now() }), 2000);
+      // NOTE: the game's own viewmodel (ic) already renders the local player's
+      // first-person gun - the netcode standby viewmodel stays hidden so the
+      // two can never fight over the camera. Remote players never get one.
+      setViewModelVisible(!1);
       try {
         opts.onSelfSpawn({ id: myId, players: m.players || [], roomId })
       } catch {}
@@ -221,9 +225,9 @@ function handleMsg(m) {
     }
     case "join": {
       if (m.id == null || m.id === myId || remotes.has(m.id)) break;
-      remotes.set(m.id, { x: 0, y: 0, z: 0, ry: 0, tx: 0, ty: 0, tz: 0, ttry: 0, hp: 100 });
+      remotes.set(m.id, { x: m.x || 0, y: m.y || 0, z: m.z || 0, ry: m.ry || 0, tx: m.x || 0, ty: m.y || 0, tz: m.z || 0, ttry: m.ry || 0, hp: 100, team: m.tm });
       try {
-        opts.spawnRemotePlayer(m.id, { x: 0, y: 0, z: 0, ry: 0, hp: 100 })
+        opts.spawnRemotePlayer(m.id, { x: m.x || 0, y: m.y || 0, z: m.z || 0, ry: m.ry || 0, hp: 100, team: m.tm })
       } catch {}
       break
     }
@@ -310,14 +314,11 @@ function sendState() {
   }
   let t = opts.getPlayerTransform() || {};
   let now = performance.now();
-  let dt = lastSent ? now - lastSentT : SEND_MS;
   if (!isNum(t.x) || !isNum(t.y) || !isNum(t.z) || !isNum(t.ry)) return;
-  if (lastSent && !validateMove(lastSent, t, dt)) {
-    // our own sample failed validation - skip it (server would drop it anyway)
-    flagSuspicious(myId, "local move rejected (" + dt.toFixed(0) + "ms)");
-    lastSent = { x: t.x, y: t.y, z: t.z }, lastSentT = now;
-    return
-  }
+  // NOTE: no client-side move rejection here - performance.now() is coarsened
+  // by browser privacy modes (Firefox fingerprinting protection), making local
+  // dt math unreliable and causing false rejections. The server validates with
+  // its own arrival clock and is the single authority.
   lastSent = { x: t.x, y: t.y, z: t.z }, lastSentT = now;
   if (!sendCount) {
     try { console.log("[net] first state sent", t.x, t.y, t.z) } catch {}

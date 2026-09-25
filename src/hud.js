@@ -1980,7 +1980,14 @@ var Nv = class e {
     let pushRoster = () => {
       // the scorebar team counter + avatar cards read game.onlinePlayers
       try {
-        game["onlinePlayers"] = [...roster].map(e => ({ id: e[0], name: e[1].name, team: e[1].team, alive: e[1].alive, hp: e[1].hp == null ? 100 : e[1].hp, isPlayer: !1 }))
+        let sig = [...roster].map(e => e[0] + ":" + (e[1].team || "?"))["sort"]()["join"]("|");
+        game["onlinePlayers"] = [...roster].map(e => ({ id: e[0], name: e[1].name, team: e[1].team, alive: e[1].alive, hp: e[1].hp == null ? 100 : e[1].hp, kills: e[1].kills || 0, isPlayer: !1 }));
+        // membership/team changed -> rebuild the top-bar avatar cards so new
+        // players appear (hp/death bars are handled per-frame by updateAvatars)
+        if (sig !== self["_mmRosterSig"]) {
+          self["_mmRosterSig"] = sig;
+          game["map"] && self["buildAvatars"] && self["buildAvatars"]()
+        }
       } catch {}
     };
 
@@ -2075,6 +2082,13 @@ var Nv = class e {
         }
       },
       onSelfSpawn: s => {
+        // late joiner: adopt the room's elapsed time so the match clock matches
+        // what everyone else sees instead of restarting at 10:00
+        try {
+          if (typeof s.age == "number" && s.age > 0 && game["roundTimeLeft"] != null) {
+            game["roundTimeLeft"] = Math.max(30, 600 - Math.floor(s.age / 1000))
+          }
+        } catch {}
         // joined an online server: show server ID + live latency for 3 seconds
         try {
           let el = document.getElementById("mm-joininfo");
@@ -2388,7 +2402,9 @@ var Nv = class e {
       let r = Math["max"](0x0, e["roundTimeLeft"]);
       i = __p_KGFS_MAIN_STR(0x17e2f, 0x194) + Math["floor"](r / 0x3c) + ":" + Math["floor"](r % 0x3c)["toString"]()["padStart"](0x2, "0") + __p_KGFS_MAIN_STR(0x17bd4, 0xa7) + t + __p_KGFS_MAIN_STR(0x17c7f, 0x7d) + n + __p_KGFS_MAIN_STR(0x17fc4, 0x25)
     }
-    if (i !== this["_sbHTML"] && (this["_sbHTML"] = i, this["scorebar"]["innerHTML"] = i, this["avCTCount"] && e["modeCtl"])) {
+    if (i !== this["_sbHTML"] && (this["_sbHTML"] = i, this["scorebar"]["innerHTML"] = i));
+    // team alive counts refresh every frame (players join/die mid-match)
+    if (this["avCTCount"] && e["modeCtl"]) {
       let t = 0x0;
       let n = 0x0;
       for (let r of [...e["allEntities"](), ...(e["onlinePlayers"] || [])]) {

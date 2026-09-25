@@ -946,7 +946,10 @@ var ic = class {
       this["flash"]["emit"](s, c, l, this["_mzF"]["x"], this["_mzF"]["y"], this["_mzF"]["z"], e["id"], !0x0, !0x0, u)
     }
     if (n === "pistol" || n === "smg" || n === "rifle" || n === "mg" || n === "shotgun" || n === "sniper") {
-      pvmShotHook && pvmShotHook(e)
+      // isolated: a throwing subscriber must never break the fire pipeline
+      try {
+        pvmShotHook && pvmShotHook(e)
+      } catch {}
     }
   } ["reload"](e) {
     this["reloadT"] = this["reloadDur"] = Math["max"](.5, e), this["_seated"] = !0x1

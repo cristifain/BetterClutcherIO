@@ -29220,12 +29220,15 @@ window["game"] = new class {
     };
     let t = this["_menuSel"](__p_KGFS_MAIN_STR(0x1317c, 0x9), "oasis");
     // preload EVERY map's assets at boot (GLB download + parse, cached per
-    // map), so joining any map skips the network download
-    let n = Promise["all"](Object["keys"](Hx)["map"](e => {
-      return Hx[e] && Hx[e]["preload"] ? Hx[e]["preload"](this["renderer"])["catch"](() => {
-        return null
-      }) : Promise["resolve"]()
-    }));
+    // map) so joining any map skips the download - one at a time to keep the
+    // peak boot memory/GPU load the same as a single map on weak machines
+    let n = Object["keys"](Hx)["reduce"]((e, t) => {
+      return e["then"](() => {
+        return Hx[t] && Hx[t]["preload"] ? Hx[t]["preload"](this["renderer"])["catch"](() => {
+          return null
+        }) : null
+      })
+    }, Promise["resolve"]());
     if (await new Promise(e => {
         return setTimeout(e, 0x4b0)
       }), !e() || this["_isMobile"]) {
