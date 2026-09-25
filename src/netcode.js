@@ -125,6 +125,9 @@ function handleMsg(m) {
       myId = m.id;
       connected = !0;
       reconnects = 0, fullRetries = 0;
+      try {
+        console.log("[net] welcome id=" + myId + " room=" + roomId + " players=" + (m.players || []).length)
+      } catch {}
       // online-session flag: bot spawning logic in the game checks this and
       // must spawn ZERO bots while it is set
       onlineMatch = !0;
@@ -225,12 +228,20 @@ function connect(room) {
     ws && ws.close()
   } catch {}
   ws = new WebSocket(WS_BASE + "/match/" + room);
+  ws.onopen = () => {
+    try {
+      console.log("[net] socket open, room=" + room)
+    } catch {}
+  };
   ws.onmessage = e => {
     try {
       handleMsg(JSON.parse(e.data))
     } catch {}
   };
-  ws.onclose = () => {
+  ws.onclose = e => {
+    try {
+      console.warn("[net] socket close code=" + e.code + " reason=" + (e.reason || ""))
+    } catch {}
     let was = connected;
     connected = !1;
     stopLoops();
