@@ -84,7 +84,9 @@ export async function requestMatch(map) {
   } catch {}
   let r = await fetch(WS_BASE + "/matchmake", {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    // no custom Content-Type: a text/plain body is a CORS-simple request, so
+    // the browser skips the preflight entirely (the server parses JSON from
+    // the raw body regardless of the header)
     body: JSON.stringify({ map: mmMap })
   });
   if (!r.ok) {
