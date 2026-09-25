@@ -26,7 +26,7 @@ import {
   clamp,
   moveToward
 } from "./shared.js";
-import { validateMove, validateShot, flagSuspicious } from "./anticheat.js";
+import { validateShot, flagSuspicious } from "./anticheat.js";
 import { initViewModel, updateViewModel, setViewModelVisible, getViewModel } from "./pviewmodel.js";
 
 var opts = null;              // callbacks passed to initMultiplayer
@@ -47,6 +47,7 @@ var lastSentT = 0;
 var fullRetries = 0;          // /matchmake retries after { t:"full" }
 var reconnects = 0;           // same-room reconnect attempts after abnormal close
 var intentionalClose = !1;
+var visHooked = !1;           // visibilitychange listener installed once
 
 // online-session flag: while set, the game's bot spawning logic must spawn
 // ZERO bots (see main.js botMgr.setup guard)
@@ -427,5 +428,16 @@ export function disconnectOnline() {
 export function initMultiplayer(o) {
   opts = o || {};
   initViewModel(opts.scene, opts.camera);
+  // browsers throttle timers in hidden tabs (setInterval drops to ~1Hz), so
+  // push a state update the instant the tab becomes visible again instead of
+  // waiting for the throttled tick
+  if (!visHooked) {
+    visHooked = !0;
+    try {
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden && isConnected()) sendState()
+      })
+    } catch {}
+  }
   return { requestMatch, sendShot, sendHit, getMyId, isConnected, isOnlineMatch, getViewModel, disconnectOnline, getLatency }
 }

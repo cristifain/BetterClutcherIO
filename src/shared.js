@@ -18,11 +18,22 @@ export var BATCH_MS = 50;         // server outgoing batch-flush window
 export var SEND_MS = 50;          // client state send rate (20Hz)
 export var RESPAWN_MS = 4000;     // server-side respawn delay after death
 
-// ---- anticheat (movement) ----
-export var MAX_SPEED = 10;        // units/sec horizontal
-export var MAX_VERTICAL_SPEED = 15;  // units/sec vertical
-export var MAX_TELEPORT = 5;      // units per single update
-export var MAP_MIN_Y = -64;       // loose map bounds (fly-hack clamp)
+// ---- anticheat (movement) - BACNet v2: burst-tolerant, average-bound ----
+// Player physics for reference: run speed <= 6.35 u/s, jump launch ~7.67 u/s,
+// gravity 20.32 u/s^2 with NO terminal clamp (void dives reach ~46 u/s), no
+// knockback mechanics. See anticheat.js for the validator these feed.
+export var MAX_SPEED = 10;        // sustained average travel (bucket refill rate)
+export var HARD_H_SPEED = 20;     // instantaneous horizontal cap (2x average)
+export var MAX_UP_SPEED = 20;     // instantaneous ascent cap (fly-hack bound)
+export var MAX_DOWN_SPEED = 55;   // instantaneous descent cap (covers void dives)
+export var BURST_SECONDS = 2;     // travel-bucket capacity, in seconds of MAX_SPEED
+export var BURST_UNITS = MAX_SPEED * BURST_SECONDS; // 20 units of burst reserve
+export var MOVE_SLACK = 0.05;     // float slack on per-axis caps
+export var CAP_WINDOW_MIN = 0.05; // min motion window for per-axis caps (one
+                                  // send interval - queued bursts after a stall
+                                  // carry ~50ms of motion per message)
+export var MAP_MIN_Y = -30;       // hard floor: void kill is y < -25 client-side,
+                                  // so no legit player ever sends below ~-25
 export var MAP_MAX_Y = 256;
 
 // ---- sub-tick hit detection ----
