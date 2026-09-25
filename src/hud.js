@@ -1972,9 +1972,9 @@ var Nv = class e {
     let roster = self["_mmRoster"] = new Map(); // id -> { team, alive }
     let mmDir = new mmVec, mmPos = new mmVec;
     let pushRoster = () => {
-      // the scorebar team counter reads game.onlinePlayers (see updateScorebar)
+      // the scorebar team counter + avatar cards read game.onlinePlayers
       try {
-        game["onlinePlayers"] = [...roster].map(e => ({ id: e[0], team: e[1].team, alive: e[1].alive }))
+        game["onlinePlayers"] = [...roster].map(e => ({ id: e[0], name: e[1].name, team: e[1].team, alive: e[1].alive, hp: e[1].hp == null ? 100 : e[1].hp, isPlayer: !1 }))
       } catch {}
     };
 
@@ -2004,7 +2004,7 @@ var Nv = class e {
       },
       spawnRemotePlayer: (e, t) => {
         let n = marker(e);
-        n["position"]["set"](t.x || 0, t.y || 0, t.z || 0), n["rotation"]["y"] = t.ry || 0, setTeamColor(n, t.team), game["scene"]["add"](n), markers.set(e, n), roster.set(e, { team: t.team, alive: (t.hp == null ? 100 : t.hp) > 0 }), pushRoster()
+        n["position"]["set"](t.x || 0, t.y || 0, t.z || 0), n["rotation"]["y"] = t.ry || 0, setTeamColor(n, t.team), game["scene"]["add"](n), markers.set(e, n), roster.set(e, { team: t.team, alive: (t.hp == null ? 100 : t.hp) > 0, hp: t.hp == null ? 100 : t.hp, name: "P" + String(e)["slice"](-4) }), pushRoster()
       },
       applyRemoteUpdate: (e, t) => {
         let n = markers.get(e);
@@ -2037,7 +2037,7 @@ var Nv = class e {
         n && (n["visible"] = e.hp > 0);
         let r = roster.get(e.id);
         if (r) {
-          r.alive = e.hp > 0, pushRoster()
+          r.alive = e.hp > 0, r.hp = e.hp, pushRoster()
         }
       },
       onDead: e => {
@@ -2833,7 +2833,7 @@ var Nv = class e {
         let t = e === "CT" ? this["avCT"] : this["avT"];
         let n = document["createElement"]("div");
         n["className"] = __p_KGFS_MAIN_STR(0x18868, 0x1f) + e, t["appendChild"](n);
-        let r = [...this["game"]["allEntities"]()]["filter"](t => {
+        let r = [...this["game"]["allEntities"](), ...(this["game"]["onlinePlayers"] || [])]["filter"](t => {
           return t["team"] === e
         });
         e === "CT" && r["reverse"]();

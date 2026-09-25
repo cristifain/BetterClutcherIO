@@ -1,7 +1,8 @@
 // ============================================================================
-// anticheat.js - client-side movement/shot validation.
-// The deployed server re-runs the exact same checks on every message
-// and silently drops anything invalid. Constants live in shared.js.
+// BACNet - BetterClutcher Anti-Cheat Network layer.
+// Client-side movement/shot validation. The deployed server re-runs the exact
+// same checks on every message and silently drops anything invalid.
+// Constants live in shared.js.
 // ============================================================================
 
 import {
