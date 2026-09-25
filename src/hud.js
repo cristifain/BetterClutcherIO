@@ -1694,6 +1694,9 @@ var Nv = class e {
     let root = this["_mmRoot"];
     let game = this["game"];
     if (!root || !game) return;
+    try {
+      console.log("[mm] bridge v5 wired")
+    } catch {}
     let q = e => root.querySelector(e);
     let store = (e, t) => {
       try {
@@ -1778,7 +1781,12 @@ var Nv = class e {
     // server running the SELECTED map (map-aware matchmaking) with zero bots
     let goStatus = q("#mmGoStatus");
     goBtn.addEventListener("click", () => {
-      if (goBtn.classList.contains("starting") || game.state !== "menu" || game._starting) return;
+      if (goBtn.classList.contains("starting") || game.state !== "menu" || game._starting) {
+        try {
+          console.log("[mm] GO blocked: state=" + game.state + " starting=" + game._starting)
+        } catch {}
+        return
+      }
       click(), H["addStat"]("games");
       let e = parseInt(read("clutcher_botcount", "10")) || 0;
       let t = parseInt(read("clutcher_diff", "2")) || 0;
@@ -1802,14 +1810,14 @@ var Nv = class e {
         });
         return
       }
-      // online: zero bots guaranteed (window flag clamps botMgr.setup), then
-      // matchmake into a server running this exact map. startGame ends in the
-      // native team-select so each player picks their own team.
+      // online: matchmake FIRST (independent of map loading), then enter the
+      // world with zero bots. startGame ends in the native team-select.
       try {
         window.__clutcherOnlineMatch = !0
       } catch {}
       this["_mmOnlineInit"]();
-      Promise.resolve(game.startGame(r, 0, t, i)).then(() => this["_mmNet"].requestMatch(r)).then(() => o()).catch(e => {
+      let g = this["_mmNet"];
+      g.requestMatch(r)["catch"](e => {
         try {
           console.error("[matchmaking]", e)
         } catch {}
@@ -1818,6 +1826,12 @@ var Nv = class e {
           window.__clutcherOnlineMatch = !1
         } catch {}
         toast("COULD NOT JOIN SERVER")
+      });
+      Promise.resolve(game.startGame(r, 0, t, i)).then(() => o()).catch(e => {
+        try {
+          console.error("[matchmaking]", e)
+        } catch {}
+        o()
       })
     });
 

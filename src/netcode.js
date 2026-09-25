@@ -79,6 +79,9 @@ var mmMap = "dusker";
 
 export async function requestMatch(map) {
   mmMap = map || mmMap;
+  try {
+    console.log("[net] matchmake map=" + mmMap)
+  } catch {}
   let r = await fetch(WS_BASE + "/matchmake", {
     method: "POST",
     headers: { "content-type": "application/json" },
