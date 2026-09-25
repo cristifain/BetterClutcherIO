@@ -10,7 +10,7 @@ import { A as t, A as mmCyl, H as mmGroup, Ht as mmVec, it as mmBasic, kt as mmS
 import { initMultiplayer, requestMatch } from "./netcode.js";
 import { onGameShot } from "./pviewmodel.js";
 import { rayPointDist, WS_BASE } from "./shared.js";
-import { $m, Ar, Av, Ba, Bm, Cr, Cs, Cv, Dr, Dv, Er, Ev, Fm, Fu, Gm, H, Iu, Km, Lu, Mo, Mu, Mv, Nu, Ov, Pu, Qg, Ru, Sv, Tr, Tv, Um, V, V_, Va, Xm, Z, __p_KGFS_MAIN_STR, __p_V5bL_array, __p_nino_bufferToString, _s, as, br, bv, eh, gs, ju, jv, kr, ku, kv, ps, qm, th, wv, wm, xr, xv, yr, ys, zm } from "./main.js";
+import { $m, Ar, Av, Ba, Bm, Cr, Cs, Cv, Dr, Dv, Er, Ev, Fm, Fu, Gm, H, Iu, Km, Lu, Mo, Mu, Mv, Nm, Nu, Ov, Pu, Qg, Ru, Sv, Tm, Tr, Tv, Um, V, V_, Va, Xm, Z, __p_KGFS_MAIN_STR, __p_V5bL_array, __p_nino_bufferToString, _s, as, br, bv, eh, gs, ju, jv, kr, ku, kv, ps, qm, th, wm, wv, xr, xv, yr, ys, zm } from "./main.js";
 
 var Nv = class e {
   constructor(e) {
@@ -1966,16 +1966,20 @@ var Nv = class e {
     }, this["_mmSync"]()
   }
   // ------------------------------------------------------------------ online bridge
-  // Wires netcode.js to the game: simple world-model markers for remote human
-  // players (movement via netcode interpolation), shot audio/muzzle for remote
-  // shots, local-player damage feedback, and local shots -> sendShot +
-  // raycast-vs-markers -> sendHit (server validates with sub-tick rewind).
+  // Wires netcode.js to the game: real CS2 character models for remote human
+  // players (movement via netcode interpolation; team model per player -
+  // CT -> ctm_sas.glb + m4a4, T -> tm_phoenix.glb + ak47, via the bot agent
+  // system Nm + its pool wm/Tm and the game's corpse manager), shot
+  // audio/muzzle for remote shots, local-player damage feedback, and local
+  // shots -> sendShot + raycast-vs-remote-bodies -> sendHit (server validates
+  // with sub-tick rewind).
   ["_mmOnlineInit"]() {
     if (this["_mmNet"]) return this["_mmNet"];
     let self = this;
     let game = this["game"];
     let markers = self["_mmMarkers"] = new Map();
     let roster = self["_mmRoster"] = new Map(); // id -> { team, alive }
+    let bodies = self["_mmBodies"] = new Map(); // id -> remote body record (agent/dying state)
     let mmDir = new mmVec, mmPos = new mmVec;
     let pushRoster = () => {
       // the scorebar team counter + avatar cards read game.onlinePlayers
@@ -1991,54 +1995,141 @@ var Nv = class e {
       } catch {}
     };
 
-    function marker(e, t) {
-      // remote player record: a capsule fallback spawned instantly, upgraded
-      // to a real team CS2 agent rig (the same models the bots use) as soon
-      // as wm() can build one
-      let n = new mmGroup;
-      n["name"] = "mremote_" + e;
-      let r = new mmStdMat({ color: t && t.team === "CT" ? 0x4a6890 : t && t.team === "T" ? 0xa8814a : 0xc05040 });
-      n["userData"]["mat"] = r;
-      let i = new mmMesh(new mmCyl(.3, .3, 1.5, 10), r);
-      i["position"]["y"] = .75, n["add"](i);
-      let a = new mmMesh(new mmSphere(.22, 10, 8), r);
-      a["position"]["y"] = 1.62, n["add"](a);
-      return {
-        ["id"]: e,
-        ["obj"]: n,
-        ["group"]: n,
-        ["agent"]: null,
-        ["team"]: t && t.team,
-        ["weapon"]: t && t.weapon || "ak47",
-        ["hp"]: t && t.hp == null ? 100 : t.hp,
-        ["tries"]: 0,
-        ["lastT"]: 0,
-        ["lastX"]: t && t.x || 0,
-        ["lastZ"]: t && t.z || 0,
-        ["goneAt"]: null
+    // ---- remote bodies: real CS2 character agents, one per remote player ----
+    // Reuses the bot body pipeline (see bots.js): Nm loads a rigged model with
+    // locomotion (Ja(): CT -> ctm_sas.glb, T -> tm_phoenix.glb), wm/Tm are the
+    // per-team agent pool, and dead bodies are handed to the game's corpse
+    // manager exactly like bot corpses. Team is swapped by pooling the old
+    // model and fetching the other team's. Unknown team (not picked yet / DM)
+    // shows the T model as a placeholder and swaps when the team arrives.
+
+    function effTeam(e) {
+      return e === "CT" ? "CT" : "T"
+    }
+
+    function remoteRec(e) {
+      let t = bodies.get(e);
+      if (!t) {
+        bodies.set(e, t = {
+          id: e, team: null, bodyTeam: null, alive: true,
+          x: 0, y: 0, z: 0, ry: 0, px: null, pz: null,
+          agent: null, loading: false, dying: null, deathAnimT: 0,
+          retryAt: 0, lastT: 0, animAcc: 0, animN: 0
+        })
       }
+      return t
     }
 
-    function setTeamColor(e, t) {
-      let n = e && e["userData"]["mat"];
-      n && n["color"]["setHex"](t === "CT" ? 0x4a6890 : t === "T" ? 0xa8814a : 0xc05040)
+    function attachAgent(e) {
+      let t = remoteRec(e);
+      if (t.agent || t.loading || t.dying) return;
+      let n = effTeam(t.team);
+      t.bodyTeam = n, t.loading = true, markers.set(e, null);
+      // pool first (mirrors the bot attach queue in bots.js): free a matching
+      // corpse back into the pool if needed, then load only on a real miss
+      let r = null;
+      try { r = wm(n) } catch {}
+      if (!r) {
+        try { game["reclaimAgentCorpse"] && game["reclaimAgentCorpse"](n) && (r = wm(n)) } catch {}
+      }
+      let i = r ? Promise.resolve(r) : new Nm(game["renderer"])["load"](n);
+      i.then(r => {
+        t.loading = false;
+        // stale while loading: remote left, switched team, died or got a body
+        if (!bodies.has(e) || effTeam(t.team) !== n || t.agent || t.dying) {
+          try { Tm(n, r) } catch {}
+          return
+        }
+        t.agent = r, r["root"]["name"] = "mremote_" + e;
+        markers.set(e, r["root"]);
+        try { game["scene"]["add"](r["root"]) } catch {}
+        r["root"]["visible"] = !!t.alive;
+        try { r["setTransform"](t.x, t.y, t.z, t.ry) } catch {}
+        try {
+          let e = r["setWeapon"](n === "CT" ? "m4a4" : "ak47", "rifle");
+          e && e["catch"] && e["catch"](() => {})
+        } catch {}
+      })["catch"](() => {
+        // load failed: clear the claim so a later state update retries
+        t.loading = false, t.bodyTeam = null, t.retryAt = Date.now() + 2000
+      })
     }
 
-    function tryAgent(e) {
-      // upgrade the capsule to a real team CS2 agent rig (the bots' models)
-      if (e["agent"] || e["tries"] >= 3) return;
-      e["tries"]++;
-      let t = null;
+    function poolAgent(e) {
+      if (!e.agent) return;
+      try { Tm(e.agent["team"] || effTeam(e.team), e.agent) } catch {}
+      e.agent = null, markers.set(e.id, null)
+    }
+
+    function driveAgent(e, t, n) {
+      // mirrors the bot body update: setTransform every frame, mixer stepped
+      // with distance LOD (1/2/3 frames by range, like bots.js _updateCS2Body)
+      let r = e.agent;
+      if (!r) return;
       try {
-        t = wm(e["team"] === "T" ? "T" : "CT")
+        r["root"]["parent"] !== game["scene"] && game["scene"]["add"](r["root"]);
+        r["root"]["visible"] = !!e.alive;
+        r["setTransform"](t.x, t.y, t.z, t.ry || 0);
+        let i = game["camera"] && game["camera"]["position"];
+        let a = 1;
+        if (i) {
+          let o = t.x - i["x"], s = t.z - i["z"], c = o * o + s * s;
+          a = c > 1600 ? 3 : c > 625 ? 2 : 1
+        }
+        e.animAcc += n, e.animN = (e.animN + 1) % a;
+        if (e.animN === 0) {
+          // velocity estimate from the interpolated motion drives the walk anim
+          let i = { vx: 0, vz: 0 };
+          if (e.px != null && e.animAcc > 0) {
+            i.vx = Math.max(-14, Math.min(14, (t.x - e.px) / e.animAcc));
+            i.vz = Math.max(-14, Math.min(14, (t.z - e.pz) / e.animAcc))
+          }
+          e.px = t.x, e.pz = t.z;
+          r["update"](e.animAcc, { vx: i.vx, vz: i.vz, airborne: false, crouch: 0, pitch: 0, flashed: 0, defusing: false, planting: false });
+          e.animAcc = 0
+        }
       } catch {}
+    }
+
+    function startRemoteDeath(e) {
+      let t = e.agent;
+      e.agent = null, markers.set(e.id, null);
       if (!t) return;
-      let n = e["group"];
-      while (n["children"]["length"]) n["remove"](n["children"][0]);
-      t["root"]["visible"] = !0x0, n["add"](t["root"]), e["agent"] = t, e["obj"] = t["root"];
+      let n = 0;
+      try { n = t["die"]("chest", false, true) || 0 } catch {}
+      // pin the body to the ground under the death position (bots.js die())
+      let r = e.y;
       try {
-        t["setWeapon"] && t["setWeapon"](e["weapon"])
+        let i = game["physics"]["groundHeight"](e.x, e.y + 1.2, e.z);
+        r = i > -20 && game["map"] && game["map"]["visualGround"] ? game["map"]["visualGround"](e.x, e.z, i) ?? i : i > -20 ? i : e.y
       } catch {}
+      let i = 0;
+      try { i = n ? t["restLift"](game["effects"] && game["effects"]["groundAt"]) : 0 } catch {}
+      e.dying = { agent: t, t: 0, dur: n, groundY: r, lift: i, lastT: 0, px: e.x, pz: e.z, ry: e.ry || 0 };
+      e.deathAnimT = n > 0 ? n + .35 : 2.6
+    }
+
+    function driveDying(e, t) {
+      let n = e.dying;
+      if (!n) return;
+      let r = n.lastT ? Math.min(.1, (t - n.lastT) / 1000) : .016;
+      n.lastT = t, e.deathAnimT -= r, n.t += r;
+      let i = n.dur > 0 ? Math.min(1, Math.max(0, ((n.dur + .35 - e.deathAnimT) / n.dur - .35) / .55)) : 1;
+      let a = (n.lift || 0) * i * i * (3 - 2 * i);
+      try {
+        n.agent["setTransform"](n.px, n.groundY + a, n.pz, n.ry), n.agent["update"](r)
+      } catch {}
+      e.deathAnimT <= 0 && handOverCorpse(e)
+    }
+
+    function handOverCorpse(e) {
+      let t = e.dying;
+      e.dying = null;
+      if (!t) return;
+      try { t.agent["loco"] && t.agent["loco"]["freeze"] && t.agent["loco"]["freeze"]() } catch {}
+      try { game["addAgentCorpse"](t.agent, e.team || t.agent["team"] || "CT", game["time"]) } catch {
+        try { t.agent["root"]["visible"] = false } catch {}
+      }
     }
 
     self["_mmNet"] = initMultiplayer({
@@ -2046,86 +2137,59 @@ var Nv = class e {
       camera: game["camera"],
       getPlayerTransform: () => {
         let e = game["player"];
-        return { x: e["x"], y: e["y"], z: e["z"], ry: e["yaw"], pitch: e["pitch"], onGround: e["onGround"], team: e["team"], kills: e["kills"] || 0, weapon: game["weapons"] && game["weapons"]["current"] || "ak47" }
+        return { x: e["x"], y: e["y"], z: e["z"], ry: e["yaw"], pitch: e["pitch"], onGround: e["onGround"], team: e["team"], kills: e["kills"] || 0 }
       },
       canSendState: () => game["state"] === "playing" && !!game["player"]["alive"],
       spawnRemotePlayer: (e, t) => {
-        if (markers.has(e)) {
-          let o = markers.get(e);
-          o["goneAt"] = null, o["hp"] = t.hp == null ? 100 : t.hp, o["obj"]["visible"] = o["hp"] > 0;
-          return
-        }
-        let n = marker(e, t);
-        n["obj"]["position"]["set"](t.x || 0, t.y || 0, t.z || 0), setTeamColor(n.group, t.team), tryAgent(n), game["scene"]["add"](n["obj"]), markers.set(e, n), roster.set(e, { team: t.team, alive: (t.hp == null ? 100 : t.hp) > 0, hp: t.hp == null ? 100 : t.hp, kills: t.kills || 0, name: "P" + String(e)["slice"](-4) }), pushRoster()
+        let n = remoteRec(e);
+        n.team = t.team || n.team, n.alive = (t.hp == null ? 100 : t.hp) > 0;
+        n.x = t.x || 0, n.y = t.y || 0, n.z = t.z || 0, n.ry = t.ry || 0, n.px = n.x, n.pz = n.z;
+        markers.set(e, null), attachAgent(e);
+        roster.set(e, { team: t.team, alive: n.alive, hp: t.hp == null ? 100 : t.hp, kills: t.kills || 0, name: "P" + String(e)["slice"](-4) }), pushRoster()
       },
       applyRemoteUpdate: (e, t) => {
-        // self-heal: a state update ALWAYS guarantees a visible player and a
-        // roster entry, even if the join/welcome event was missed (reconnect,
+        // self-heal: a state update ALWAYS guarantees a body and a roster
+        // entry, even if the join/welcome event was missed (reconnect,
         // scene rebuild, timing)
-        let n = markers.get(e);
-        if (!n) {
-          spawnRemotePlayer(e, t);
-          n = markers.get(e);
-          try { console.log("[mm] materialized player for", e) } catch {}
+        let n = remoteRec(e);
+        let r = roster.get(e);
+        if (!r) {
+          roster.set(e, r = { team: t.team, alive: !0, hp: t.hp == null ? 100 : t.hp, kills: t.kills || 0, name: "P" + String(e)["slice"](-4) });
+          pushRoster();
+          try { console.log("[mm] materialized body for", e) } catch {}
         }
-        // self-heal: map loads can rebuild the scene and detach our players
-        if (n["obj"]["parent"] !== game["scene"]) game["scene"]["add"](n["obj"]);
-        if (!n.userData.got1) {
-          n.userData.got1 = true;
-          try { console.log("[mm] applying first update for", e, t.x, t.y, t.z) } catch {}
+        n.x = t.x, n.y = t.y, n.z = t.z, n.ry = t.ry || 0;
+        t.team && (n.team = t.team);
+        // team swap -> the model must swap too (pool the old, fetch the new);
+        // bodyTeam tracks which team the current/last fetch was for
+        let i = effTeam(n.team);
+        if (!n.loading && !n.dying && n.bodyTeam !== i && Date.now() >= n.retryAt) {
+          poolAgent(n), attachAgent(e)
         }
-        n["hp"] = t.hp == null ? n["hp"] : t.hp, n["obj"]["visible"] = n["hp"] > 0;
-        // team change -> recolor capsule / swap the agent rig to the new team
-        if (t.team && n["team"] !== t.team) {
-          n["team"] = t.team, setTeamColor(n.group, t.team);
-          if (n["agent"]) {
-            game["scene"]["remove"](n["obj"]), n["agent"] = null, n["tries"] = 0, n["obj"] = n["group"], game["scene"]["add"](n["group"])
-          }
-          tryAgent(n)
-        }
-        // weapon change -> arm the rig
-        if (t.weapon && n["weapon"] !== t.weapon) {
-          n["weapon"] = t.weapon;
-          try {
-            n["agent"] && n["agent"]["setWeapon"] && n["agent"]["setWeapon"](t.weapon)
-          } catch {}
-        }
-        tryAgent(n);
-        // drive the rig: transform + locomotion from the interpolated position
-        let r = performance.now();
-        let i = n["lastT"] ? Math.max(.016, (r - n["lastT"]) / 1000) : .05;
-        let a = (t.x - n["lastX"]) / i;
-        let o = (t.z - n["lastZ"]) / i;
-        n["lastT"] = r, n["lastX"] = t.x, n["lastZ"] = t.z;
-        if (n["agent"]) {
-          try {
-            let s = game["physics"] ? game["physics"]["groundHeight"](t.x, t.y + 1.2, t.z) : t.y;
-            (s = s > -20 ? s : t.y) && n["agent"]["setTransform"](t.x, s, t.z, t.ry || 0), n["agent"]["update"](i, { vx: a, vz: o, airborne: !1, crouch: 0, pitch: t.pitch || 0 })
-          } catch {}
+        let a = performance.now();
+        if (n.dying) {
+          driveDying(n, a)
+        } else if (n.agent) {
+          let u = n.lastT ? Math.min(.1, (a - n.lastT) / 1000) : .016;
+          n.lastT = a;
+          driveAgent(n, t, u)
         } else {
-          n["obj"]["position"]["set"](t.x, t.y, t.z), n["obj"]["rotation"]["y"] = t.ry || 0
+          n.lastT = a
         }
-        let u = roster.get(e);
-        if (!u) {
-          roster.set(e, { team: t.team, alive: n["hp"] > 0, hp: n["hp"], kills: t.kills || 0, name: "P" + String(e)["slice"](-4) }), pushRoster(), u = roster.get(e)
+        let o = false;
+        if (t.team && r.team !== t.team) {
+          r.team = t.team, o = true
         }
-        if (u) {
-          let c = !1;
-          if (t.team && u.team !== t.team) {
-            u.team = t.team, c = !0
-          }
-          if (t.kills != null && u.kills !== t.kills) {
-            u.kills = t.kills, c = !0
-          }
-          if (u.alive !== n["hp"] > 0) {
-            u.alive = n["hp"] > 0, c = !0
-          }
-          c && pushRoster()
+        if (t.kills != null && r.kills !== t.kills) {
+          r.kills = t.kills, o = true
         }
+        o && pushRoster()
       },
       despawnRemotePlayer: e => {
-        let t = markers.get(e);
-        t && (game["scene"]["remove"](t["obj"]), markers.delete(e));
+        let t = remoteRec(e);
+        if (t.dying) handOverCorpse(t);
+        poolAgent(t);
+        bodies.delete(e), markers.delete(e);
         if (roster["delete"](e)) pushRoster()
       },
       onShot: e => {
@@ -2142,11 +2206,21 @@ var Nv = class e {
           self["_mmLastHp"] = e.hp;
           return
         }
-        let n = markers.get(e.id);
-        n && (n["hp"] = e.hp, n["obj"]["visible"] = e.hp > 0);
+        let n = remoteRec(e.id);
+        n.alive = e.hp > 0;
         let r = roster.get(e.id);
         if (r) {
           r.alive = e.hp > 0, r.hp = e.hp, pushRoster()
+        }
+        if (n.agent) {
+          // model came back alive (respawn / round start): undo a death pose
+          if (e.hp > 0 && n.agent["dead"] && n.agent["revive"]) {
+            n.agent["revive"](), n.px = null, n.pz = null
+          }
+          n.agent["root"]["visible"] = e.hp > 0
+        } else if (e.hp > 0 && !n.loading && !n.dying) {
+          // body was already handed to the corpse pile: re-arm a fetch
+          n.bodyTeam = null
         }
       },
       onDead: e => {
@@ -2155,12 +2229,13 @@ var Nv = class e {
           self["_mmLastHp"] = 0;
           return
         }
-        let n = markers.get(e.id);
-        n && (n["hp"] = 0, n["obj"]["visible"] = !1);
+        let n = remoteRec(e.id);
+        n.alive = false;
         let r = roster.get(e.id);
         if (r) {
-          r.alive = !1, pushRoster()
+          r.alive = false, pushRoster()
         }
+        startRemoteDeath(n)
       },
       onSelfSpawn: s => {
         // late joiner: adopt the room's elapsed time so the match clock matches
@@ -2193,10 +2268,10 @@ var Nv = class e {
       }
     });
     // local gun shots: relay to the server (sub-tick) and raycast the remote
-    // markers for hit detection -> sendHit (server rewinds + validates)
+    // bodies for hit detection -> sendHit (server rewinds + validates)
     self["_mmReattach"] = () => {
       for (let e of markers.values()) {
-        if (e["obj"]["parent"] !== game["scene"]) game["scene"]["add"](e["obj"])
+        e && e.parent !== game["scene"] && game["scene"]["add"](e)
       }
     };
     onGameShot(e => {
@@ -2207,8 +2282,13 @@ var Nv = class e {
       n["getWorldDirection"](mmDir);
       t.sendShot(mmPos["x"], mmPos["y"], mmPos["z"], mmDir["x"], mmDir["y"], mmDir["z"]);
       let r = null, i = 1e9;
+      // friendly fire off: never target teammates (the server rejects them
+      // anyway - both teams must be known to count as same-team)
+      let myTm = game["player"] && game["player"]["team"];
       for (let [a, o] of markers) {
-        if (!o["visible"]) continue;
+        if (!o || !o["visible"]) continue;
+        let tm = roster.get(a);
+        if (tm && tm.team && myTm && tm.team === myTm) continue;
         let s = o["position"];
         let c = (s.x - mmPos.x) * mmDir.x + (s.y + .9 - mmPos.y) * mmDir.y + (s.z - mmPos.z) * mmDir.z;
         if (c <= 0 || c > 120 || c >= i) continue;
@@ -2216,6 +2296,55 @@ var Nv = class e {
       }
       r && t.sendHit(r, e && e.dmg || 25)
     });
+    // knife/taser melee bridge: the local melee (game.playerMelee -> meleeAttack)
+    // only raycasts game entities (bots), so online remotes are hit through this
+    // bridge instead - same aim cone (.55 dot), reach (def.range + .4), line-of-
+    // sight and backstab rules as the local melee, enemies only. The server
+    // validates the swing ray as a short-range self-contained hit (same rewind,
+    // team and rate rules as gun shots); dmg comes from the game's KNIFE_DMG
+    // table (slash 40 / back 90 / stab 65 / backstab 180, zeus 500).
+    if (!game["_mmMeleeHooked"]) {
+      game["_mmMeleeHooked"] = true;
+      let origMelee = game["playerMelee"];
+      game["playerMelee"] = function() {
+        let out = origMelee.apply(this, arguments);
+        let f = game["_mmMeleeSwing"];
+        try { f && f.apply(null, arguments) } catch {}
+        return out
+      }
+    }
+    game["_mmMeleeSwing"] = (e, t, n) => {
+      let net = self["_mmNet"];
+      if (!net || !net.isConnected()) return;
+      if (game["state"] !== "playing" || !game["player"]["alive"]) return;
+      let myTm = game["player"]["team"];
+      let cam = game["camera"];
+      mmPos["copy"](cam["position"]);
+      cam["getWorldDirection"](mmDir);
+      let reach = ((t && t["range"]) || 1.9) + .4;
+      let best = null, bestD = 1e9;
+      for (let [a, o] of markers) {
+        if (!o || !o["visible"]) continue;
+        let tm = roster.get(a);
+        if (tm && tm.team && myTm && tm.team === myTm) continue;
+        let s = o["position"];
+        let wx = s.x - mmPos.x, wy = s.y + 1.1 - mmPos.y, wz = s.z - mmPos.z;
+        let d = Math.hypot(wx, wy, wz);
+        if (d > reach || d >= bestD) continue;
+        if ((wx * mmDir.x + wy * mmDir.y + wz * mmDir.z) / (d || 1) < .55) continue;
+        if (game["physics"]["lineClear"] && !game["physics"]["lineClear"](mmPos.x, mmPos.y, mmPos.z, s.x, s.y + 1.1, s.z)) continue;
+        bestD = d, best = a
+      }
+      if (!best) return;
+      // backstab: the swing lands behind the victim's facing (meleeAttack rule)
+      let dmg = e;
+      let rec = bodies.get(best);
+      if (n != null && rec) {
+        let fy = rec.ry || 0;
+        mmDir.x * -Math.sin(fy) + mmDir.z * -Math.cos(fy) > .5 && (dmg = n)
+      }
+      net.sendHit(best, dmg, { ox: mmPos.x, oy: mmPos.y, oz: mmPos.z, dx: mmDir.x, dy: mmDir.y, dz: mmDir.z })
+    };
     return self["_mmNet"]
   } ["showPause"]() {
     this["buyOpen"] || (this["_renderPauseKeys"](), this["_lockNotice"](), this["pauseEl"]["style"]["display"] = "flex", this["pauseOpen"] = !0x0)

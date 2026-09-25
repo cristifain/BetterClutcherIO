@@ -1,0 +1,29 @@
+What this codebase is
+Two distinct layers live side by side:
+
+The recovered original game — decompiled/decoded from clutcher.io:
+
+
+src/main.js
+ (32.5K lines, ~283 top-level defs) — the whole engine: game loop, movement, weapons, the full defuse-mode bomb logic (main.js:23278–23809), bots, menu, economy. Obfuscated names (jt, Mt, hex literals like 0x1), no section comments.
+src/three-B50Y55N1.js — vendored minified three.js build. src/data-BdgATJBp.js — CS2-style sound-event tables (Weapon_AK47.AddAmmo etc.) plus skin data. src/gloveshaders-DZ_Fdhsb.js — decompiled Source 2 shader code (g_tLayerMask_s0, g_tDamageNormal_s3), matching the README's note about Valve assets.
+
+src/hud.js
+ (3.2K), bots.js (2K), pviewmodel.js (1.3K), audio.js, paint-system.js, pcrossair.js, decode.js — each is an extraction "split verbatim from main.js", with careful circular imports back to main.js (runtime-only references, so they evaluate safely). cases.js is the 42-crate data table pulled out of the data chunk.
+index.html carries ~1800 lines of inline JS (UI scaling, preloads) and loads the game as type="module" from src/main.js (index.html:1889).
+Your original additions (hand-written, where the real review value is):
+
+
+src/netcode.js
+ — WebSocket client, quickmatch, 20Hz state send, remote interpolation, retry/reconnect with backoff.
+
+src/shared.js
+ / 
+src/anticheat.js
+ — shared constants + move/shot validation, deliberately duplicated client- and server-side.
+
+betterclutcher-server/src/index.js
+ (703 lines, read fully) — Cloudflare Worker: Matchmaker (room registry, reservations, ghost cleanup) + MatchRoom Durable Object (sub-tick state, hit rewind, host relay).
+devconsole.js — opt-in console, fine.
+How multiplayer works (v0.9)
+Client sends state at 20Hz with performance.now() timestamps; the server keeps a per-connection clock-offset EMA and a ~1s position ring buffer, so it can rewind any target to the shooter's fire moment and reject hits that miss the ray (radius 1.0 at eye height). Shots and hits bypass the 30ms throttle; damage is clamped to 100/hit, 12 hits/sec. Remote players render as cylinder+sphere markers named "P"+id. The design decisions I'd call out as good: validating movement with the server's arrival clock instead of client vt (netcode.js:319 explains why), reservation expiry for players who matchmake but never connect, and hibernation-safe state restore.
