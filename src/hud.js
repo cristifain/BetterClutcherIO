@@ -1772,19 +1772,23 @@ var Nv = class e {
     });
 
     // ---- GO (matchmaking does nothing; practice starts a bot match)
+    let goStatus = q("#mmGoStatus");
     goBtn.addEventListener("click", () => {
       if (goBtn.classList.contains("disabled") || read("clutcher_cat", "matchmaking") !== "practice") {
         toast("MATCHMAKING IS NOT AVAILABLE - USE PRACTICE"), click();
         return
       }
       if (game.state !== "menu" || game._starting) return;
+      goBtn.classList.add("starting"), goStatus && goStatus.classList.add("show");
       click(), H["addStat"]("games");
       let e = parseInt(read("clutcher_botcount", "10")) || 0;
       let t = parseInt(read("clutcher_diff", "2")) || 0;
       let n = root.querySelector(".map-col.sel");
       let r = n ? n.dataset.map : "dusker";
       let i = read("clutcher_mode", "defusal");
-      Promise.resolve(game.startGame(r, e, t, i)).then(() => game.finishTeamSelect("CT")).catch(() => {})
+      Promise.resolve(game.startGame(r, e, t, i)).then(() => game.finishTeamSelect("CT")).catch(() => {
+        goBtn.classList.remove("starting"), goStatus && goStatus.classList.remove("show"), toast("COULD NOT START MATCH")
+      })
     });
 
     // ---- settings: player name
@@ -1892,6 +1896,7 @@ var Nv = class e {
     // ---- sync on every menu open
     this["_mmSync"] = () => {
       setCat(read("clutcher_cat", "matchmaking")), setMode(read("clutcher_mode", "defusal")), setDiff(parseInt(read("clutcher_diff", "2")) || 0), setBots(parseInt(read("clutcher_botcount", "10")) || 0);
+      goBtn.classList.remove("starting"), goStatus && goStatus.classList.remove("show");
       let e = root.querySelector(".map-col.sel");
       e || setMap("dusker"), nameIn.value = read("clutcher_name", "Player");
       for (let t of paints) try {
