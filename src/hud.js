@@ -1803,7 +1803,10 @@ var Nv = class e {
         window.__clutcherOnlineMatch = !0
       } catch {}
       this["_mmOnlineInit"]();
-      Promise.resolve(game.startGame(r, 0, t, i)).then(() => this["_mmNet"].requestMatch(r)).then(() => o()).catch(() => {
+      Promise.resolve(game.startGame(r, 0, t, i)).then(() => this["_mmNet"].requestMatch(r)).then(() => o()).catch(e => {
+        try {
+          console.error("[matchmaking]", e)
+        } catch {}
         o();
         try {
           window.__clutcherOnlineMatch = !1
@@ -2030,7 +2033,28 @@ var Nv = class e {
           r.alive = !1, pushRoster()
         }
       },
-      onSelfSpawn: () => {}
+      onSelfSpawn: s => {
+        // joined an online server: show server ID + live latency for 3 seconds
+        try {
+          let el = document.getElementById("mm-joininfo");
+          if (!el) {
+            el = document.createElement("div");
+            el.id = "mm-joininfo";
+            document.body.appendChild(el)
+          }
+          let net = self["_mmNet"];
+          let done = Date.now() + 3000;
+          el.classList.add("show");
+          let tick = () => {
+            if (!el.parentNode) return;
+            let r = net && net.getLatency();
+            el.textContent = "ONLINE SERVER " + (s.roomId || "?") + (r != null ? " \u00b7 " + r + "MS" : " \u00b7 CONNECTING");
+            if (Date.now() < done) setTimeout(tick, 250);
+            else el.classList.remove("show")
+          };
+          tick()
+        } catch {}
+      }
     });
     // local gun shots: relay to the server (sub-tick) and raycast the remote
     // markers for hit detection -> sendHit (server rewinds + validates)

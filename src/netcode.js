@@ -39,6 +39,8 @@ var remotes = new Map();      // id -> { x,y,z,ry, tx,ty,tz,try_, hp }
 var sendTimer = 0;
 var rafId = 0;
 var lastFrame = 0;
+var pingTimer = 0;            // latency probe interval
+var lastRtt = null;           // last measured round-trip in ms
 var lastSent = null;          // last sent { x,y,z } for client-side validation
 var lastSentT = 0;
 var fullRetries = 0;          // /matchmake retries after { t:"full" }
@@ -66,6 +68,10 @@ export function isOnlineMatch() {
   return onlineMatch
 }
 
+export function getLatency() {
+  return lastRtt
+}
+
 // ---- matchmaking: ask the worker for a room, then connect automatically ----
 // Rooms are per-map: the matchmaker only hands out rooms running the SAME map,
 // so you can never spawn into a server playing a different map than selected.
@@ -83,7 +89,7 @@ export async function requestMatch(map) {
   }
   let j = await r.json();
   if (!j || !j.roomId) {
-    throw new Error(j && j.error || "matchmaker returned no room")
+    throw new Error(j && (j.detail || j.error) || "matchmaker returned no room")
   }
   setOnline(!0);
   connect(j.roomId);
@@ -126,8 +132,13 @@ function handleMsg(m) {
         window.__clutcherOnlineMatch = !0
       } catch {}
       openRemotes(m.players);
+      // latency probe: first ping right away, then every 2s (server echoes vt)
+      lastRtt = null;
+      send({ t: "p", vt: performance.now() });
+      clearInterval(pingTimer);
+      pingTimer = setInterval(() => send({ t: "p", vt: performance.now() }), 2000);
       try {
-        opts.onSelfSpawn({ id: myId, players: m.players || [] })
+        opts.onSelfSpawn({ id: myId, players: m.players || [], roomId })
       } catch {}
       // local player only: show the netcode viewmodel on the local camera
       setViewModelVisible(!0);
@@ -182,6 +193,10 @@ function handleMsg(m) {
       try {
         opts.onDead({ id: m.id, killer: m.killer })
       } catch {}
+      break
+    }
+    case "p2": {
+      if (isNum(m.vt)) lastRtt = Math.max(0, Math.round(performance.now() - m.vt));
       break
     }
     case "full": {
@@ -320,6 +335,7 @@ function startLoops() {
 
 function stopLoops() {
   clearInterval(sendTimer), sendTimer = 0;
+  clearInterval(pingTimer), pingTimer = 0;
   cancelAnimationFrame(rafId), rafId = 0;
 }
 
@@ -345,5 +361,5 @@ export function disconnectOnline() {
 export function initMultiplayer(o) {
   opts = o || {};
   initViewModel(opts.scene, opts.camera);
-  return { requestMatch, sendShot, sendHit, getMyId, isConnected, isOnlineMatch, getViewModel, disconnectOnline }
+  return { requestMatch, sendShot, sendHit, getMyId, isConnected, isOnlineMatch, getViewModel, disconnectOnline, getLatency }
 }
