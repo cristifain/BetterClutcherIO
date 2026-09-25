@@ -77,28 +77,86 @@ export function getLatency() {
 // so you can never spawn into a server playing a different map than selected.
 var mmMap = "dusker";
 
-export async function requestMatch(map) {
+// ---- matchmaking over the WebSocket itself: the browser opens
+// /quickmatch/<map>, the worker assigns a room server-side and upgrades into
+// it. No cross-origin fetch is involved (fetch to workers.dev is blocked by
+// some browser configurations), so this works where fetch does not.
+var qmResolve = null;
+var qmReject = null;
+
+export function requestMatch(map) {
   mmMap = map || mmMap;
-  try {
-    console.log("[net] matchmake map=" + mmMap)
-  } catch {}
-  let r = await fetch(WS_BASE + "/matchmake", {
-    method: "POST",
-    // no custom Content-Type: a text/plain body is a CORS-simple request, so
-    // the browser skips the preflight entirely (the server parses JSON from
-    // the raw body regardless of the header)
-    body: JSON.stringify({ map: mmMap })
-  });
-  if (!r.ok) {
-    throw new Error("matchmaker HTTP " + r.status)
-  }
-  let j = await r.json();
-  if (!j || !j.roomId) {
-    throw new Error(j && (j.detail || j.error) || "matchmaker returned no room")
-  }
   setOnline(!0);
-  connect(j.roomId);
-  return j.roomId
+  return new Promise((resolve, reject) => {
+    qmResolve = resolve, qmReject = reject;
+    try {
+      console.log("[net] quickmatch map=" + mmMap)
+    } catch {}
+    connectQuick(mmMap);
+  });
+}
+
+function connectQuick(map) {
+  openSocket(WS_BASE + "/quickmatch/" + map, null);
+}
+
+function connectRoom(room) {
+  openSocket(WS_BASE + "/match/" + room, room);
+}
+
+function openSocket(url, room) {
+  roomId = room || roomId;
+  intentionalClose = !1;
+  try {
+    ws && ws.close()
+  } catch {}
+  ws = new WebSocket(url);
+  ws.onopen = () => {
+    try {
+      console.log("[net] socket open " + url)
+    } catch {}
+  };
+  ws.onmessage = e => {
+    try {
+      handleMsg(JSON.parse(e.data))
+    } catch {}
+  };
+  ws.onclose = e => {
+    try {
+      console.warn("[net] socket close code=" + e.code + " reason=" + (e.reason || ""))
+    } catch {}
+    let was = connected;
+    connected = !1;
+    stopLoops();
+    if (intentionalClose) return;
+    // drop all remotes; the game clears meshes through the callback
+    for (let id of [...remotes.keys()]) {
+      remotes.delete(id);
+      try {
+        opts.despawnRemotePlayer(id)
+      } catch {}
+    }
+    if (!was && !roomId) {
+      // quickmatch never completed: retry it (the room id is unknown)
+      if (reconnects++ < 3) {
+        setTimeout(() => connectQuick(mmMap), 600 * reconnects)
+      } else if (qmReject) {
+        let rj = qmReject;
+        qmResolve = qmReject = null;
+        setOnline(!1);
+        rj(new Error("could not reach matchmaker"))
+      }
+      return
+    }
+    if (reconnects++ < 3 && roomId) {
+      setTimeout(() => connectRoom(roomId), 600 * reconnects)
+    } else if (was) {
+      setTimeout(() => requestMatch(mmMap)["catch"](() => setOnline(!1)), 1000)
+    } else {
+      setOnline(!1)
+    }
+  };
+  ws.onerror = () => {};
 }
 
 function send(o) {
@@ -130,9 +188,16 @@ function handleMsg(m) {
       myId = m.id;
       connected = !0;
       reconnects = 0, fullRetries = 0;
+      if (m.roomId) roomId = m.roomId;
       try {
         console.log("[net] welcome id=" + myId + " room=" + roomId + " players=" + (m.players || []).length)
       } catch {}
+      // resolve the pending quickmatch promise with the assigned room
+      if (qmResolve) {
+        let rs = qmResolve;
+        qmResolve = qmReject = null;
+        rs(roomId)
+      }
       // online-session flag: bot spawning logic in the game checks this and
       // must spawn ZERO bots while it is set
       onlineMatch = !0;
@@ -226,48 +291,7 @@ function handleMsg(m) {
 }
 
 // ---- connection management ----
-function connect(room) {
-  roomId = room;
-  intentionalClose = !1;
-  try {
-    ws && ws.close()
-  } catch {}
-  ws = new WebSocket(WS_BASE + "/match/" + room);
-  ws.onopen = () => {
-    try {
-      console.log("[net] socket open, room=" + room)
-    } catch {}
-  };
-  ws.onmessage = e => {
-    try {
-      handleMsg(JSON.parse(e.data))
-    } catch {}
-  };
-  ws.onclose = e => {
-    try {
-      console.warn("[net] socket close code=" + e.code + " reason=" + (e.reason || ""))
-    } catch {}
-    let was = connected;
-    connected = !1;
-    stopLoops();
-    if (intentionalClose) return;
-    // drop all remotes; the game clears meshes through the callback
-    for (let id of [...remotes.keys()]) {
-      remotes.delete(id);
-      try {
-        opts.despawnRemotePlayer(id)
-      } catch {}
-    }
-    if (reconnects++ < 3 && roomId) {
-      setTimeout(() => connect(roomId), 600 * reconnects)
-    } else if (was) {
-      setTimeout(() => requestMatch()["catch"](() => setOnline(!1)), 1000)
-    } else {
-      setOnline(!1)
-    }
-  };
-  ws.onerror = () => {};
-}
+// (openSocket / connectQuick / connectRoom above handle all connections)
 
 // ---- 20Hz state send (sub-tick: real client timestamp per update) ----
 function sendState() {
