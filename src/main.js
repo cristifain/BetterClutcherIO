@@ -218,7 +218,7 @@ import {
   t as gt
 } from "./data-BdgATJBp.js";
 import { wp } from "./paint-system.js";
-import { buildCrosshair, updateCrosshair } from "./pcrossair.js";
+import { buildCrosshair, updateCrosshair, applySniperWidth, xhairHitEnabled } from "./pcrossair.js";
 import { Og, vh, tg } from "./bots.js";
 import { initDevConsole } from "./devconsole.js";
 import { Qs, nc, rc, Ms, ec, ic } from "./pviewmodel.js";
@@ -25689,7 +25689,7 @@ var Nv = class e {
     }
     this["_radarCtx"] = this["radarEl"]["getContext"]("2d"), this["topRightEl"] = Z("div", "topright", e), this["fpsEl"] = Z("div", "fps", this["topRightEl"]), this["siteEl"] = Z("div", "sitebadge", this["topRightEl"]), this["siteEl"]["innerHTML"] = __p_DWtt_STR_66(0xf152, 0x42), this["killfeed"] = Z("div", "killfeed", e), this["announceEl"] = Z("div", "announce", e), this["rewardEl"] = Z("div", "reward", e), this["dmgEl"] = Z("div", "dmgov", e), this["flashEl"] = Z("div", "flashov", e), this["scopeEl"] = Z("div", "scopeov", e), addEventListener("resize", () => {
       return this["_snapScopeLens"]()
-    }), this["scopeEl"]["innerHTML"] = __p_DWtt_STR_66(0xf196, 0x7b), this["scLines"] = Array["from"](this["scopeEl"]["querySelectorAll"](__p_DWtt_STR_66(0xf217, 0xa))), this["_preloadScopeArt"](), this["respawnEl"] = Z("div", "respawn", e), this["progressWrap"] = Z("div", "progresswrap", e), this["progressWrap"]["innerHTML"] = __p_DWtt_STR_66(0xf222, 0x6f), this["progressWrap"]["style"]["display"] = "none", this["hintEl"] = Z("div", "usehint", e), this["freezeEl"] = Z("div", "freezeov", e), this["spectateEl"] = Z("div", "spectatebar", e), this["spectateEl"]["style"]["display"] = "none", this["buyHint"] = Z("div", "buyhint", e), this["buyHint"]["innerHTML"] = __p_DWtt_STR_66(0xf298, 0xf), this["_ensureKillCard"](), this["_kcImg"]["src"] = ju("knife"), this["caseBtn"] = Z("div", "casebtn", e), this["caseBtn"]["innerHTML"] = __p_DWtt_STR_66(0xf2a9, 0x2e) + jv(__p_DWtt_STR_66(0xf2da, 0xe)) + __p_DWtt_STR_66(0xf2ec, 0x25), this["caseBtn"]["onclick"] = () => {
+    }), this["scopeEl"]["innerHTML"] = __p_DWtt_STR_66(0xf196, 0x7b), this["scLines"] = Array["from"](this["scopeEl"]["querySelectorAll"](__p_DWtt_STR_66(0xf217, 0xa))), applySniperWidth(this), this["_preloadScopeArt"](), this["respawnEl"] = Z("div", "respawn", e), this["progressWrap"] = Z("div", "progresswrap", e), this["progressWrap"]["innerHTML"] = __p_DWtt_STR_66(0xf222, 0x6f), this["progressWrap"]["style"]["display"] = "none", this["hintEl"] = Z("div", "usehint", e), this["freezeEl"] = Z("div", "freezeov", e), this["spectateEl"] = Z("div", "spectatebar", e), this["spectateEl"]["style"]["display"] = "none", this["buyHint"] = Z("div", "buyhint", e), this["buyHint"]["innerHTML"] = __p_DWtt_STR_66(0xf298, 0xf), this["_ensureKillCard"](), this["_kcImg"]["src"] = ju("knife"), this["caseBtn"] = Z("div", "casebtn", e), this["caseBtn"]["innerHTML"] = __p_DWtt_STR_66(0xf2a9, 0x2e) + jv(__p_DWtt_STR_66(0xf2da, 0xe)) + __p_DWtt_STR_66(0xf2ec, 0x25), this["caseBtn"]["onclick"] = () => {
       this["game"]["state"] === "playing" && this["showPauseTab"]("cases")
     }, this["scoreboardEl"] = Z("div", "scoreboard", e), this["buyEl"] = Z("div", "buymenu", e), this["buildBuyMenu"](), this["pauseEl"] = Z("div", "pause", e), this["pauseEl"]["innerHTML"] = __p_DWtt_STR_66(0xf313, 0x5b6), this["pauseEl"]["style"]["display"] = "none", this["pauseEl"]["querySelector"](__p_DWtt_STR_66(0xf8cb, 0xe))["onclick"] = () => {
       return this["game"]["resume"]()
@@ -27537,6 +27537,9 @@ var Nv = class e {
       }, 0xc8)
     }
   } ["hitmarker"](e) {
+    if (!xhairHitEnabled()) {
+      return
+    }
     this["hitT"] = e ? .24 : .18;
     let t = document["getElementById"]("hitmark");
     t["classList"]["toggle"]("hs", e), t["classList"]["add"]("pop"), this["_hmFlip"] = !this["_hmFlip"], t["style"]["animationName"] = this["_hmFlip"] ? "hmpop2" : "hmpop", t["style"]["opacity"] = 0x1

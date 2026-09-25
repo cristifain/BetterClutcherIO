@@ -2,7 +2,9 @@
 // Off by default. Enable it once in Settings -> "Dev-Console" (persisted in
 // localStorage); after that ` (backquote) toggles a draggable CS:GO-style
 // console anywhere in the page.
-// Commands: remove_bots, fly.
+// Commands: remove_bots, fly, xh.
+
+import { getXhair, setXhair, resetXhair, XH_KEYS } from "./pcrossair.js";
 
 const LS_KEY = "clutcher_devconsole";
 
@@ -180,7 +182,7 @@ function ensureUI() {
     <div class="dc-log"></div>
     <div class="dc-inputrow">
       <input class="dc-input" type="text" spellcheck="false" autocomplete="off"
-             placeholder="type a command... (remove_bots, fly)">
+             placeholder="type a command... (remove_bots, fly, xh)">
       <button class="dc-submit">SUBMIT</button>
     </div>`;
   document.body.appendChild(root);
@@ -322,9 +324,34 @@ function runCommand(raw) {
       else print("Fly OFF. Gravity restored.", "ok");
       break;
     }
+    case "xh": {
+      const args = cmd.split(/\s+/).slice(1);
+      if (!args.length || args[0] === "help") {
+        print("xh — custom crosshair. Usage: xh <key> <value> | xh <key> | xh reset", "out");
+        print("Keys: " + XH_KEYS.join(", "), "out");
+        print("color: 0=white 1=green 2=cyan 3=yellow 4=pink 5=custom (set r/g/b keys)", "out");
+        print("style: 0=dynamic 1=classic static; dot: 0/1; sniper: scope line px; hit/snipehide: 0/1", "out");
+        break;
+      }
+      if (args[0] === "reset") {
+        print("xh reset -> " + JSON.stringify(resetXhair()), "ok");
+        break;
+      }
+      if (args.length === 1) {
+        const cur = getXhair();
+        if (args[0] in cur) print("xh " + args[0] + " = " + cur[args[0]], "out");
+        else print("xh: unknown key '" + args[0] + "'. Keys: " + XH_KEYS.join(", "), "err");
+        break;
+      }
+      const k = args[0];
+      const v = Number(args[1]);
+      if (setXhair(k, v)) print("xh: " + k + " = " + v + " (saved)", "ok");
+      else print("xh: bad key or value. Keys: " + XH_KEYS.join(", "), "err");
+      break;
+    }
     default:
       print("Unknown command: " + name, "err");
-      print("Available commands: remove_bots, fly", "out");
+      print("Available commands: remove_bots, fly, xh", "out");
   }
 }
 
