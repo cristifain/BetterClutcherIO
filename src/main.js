@@ -220,6 +220,7 @@ import {
 import { wp } from "./paint-system.js";
 import { buildCrosshair, updateCrosshair } from "./pcrossair.js";
 import { Og, vh, tg } from "./bots.js";
+import { initDevConsole } from "./devconsole.js";
 import { Qs, nc, rc, Ms, ec, ic } from "./pviewmodel.js";
 export { Ah, Ai, Bh, Ca, Da, Dh, Ea, Eh, Fh, Fo, Gh, Hh, Ih, Jh, Lh, Mh, Mt, Nh, Nm, Oh, Ph, Qh, Rh, Rn, Rt, Sa, Ta, Th, Tm, Ua, Uh, V, Vh, Wh, Ym, ah, ca, ch, da, dh, fa, fh, fo, ih, jh, jt, ka, kh, lh, mh, nh, oa, oh, ph, po, qh, rh, sa, sh, ua, uh, wm, z, zh };
 export { H, Ro, Yo, ac, fs };
@@ -31688,6 +31689,7 @@ window["game"] = new class {
     }, {
       ["once"]: !0x0
     }), this["player"] = new ji(this), this["viewmodel"] = new ic(this);
+    initDevConsole(this);
     {
       let e = new Ce(this["renderer"]);
       this["vmEnvTex"] = e["fromScene"](Yb(), .04)["texture"], this["vmEnvTexMetal"] = e["fromScene"](Xb(), .04)["texture"], e["dispose"]()

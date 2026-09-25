@@ -2978,240 +2978,164 @@ var e = {
       sw: 0
     },
     gear_grenadetoss: {
-      c: [
-        [1.197, 1],
-        [10.138, .297],
-        [27.94, 0]
-      ],
-      ev: `Inspect.Gear.GrenadeToss`,
-      g: .03,
-      o: 1.524,
-      p: 1.1,
-      sw: 0
+        c: [[1.197, 1], [10.138, .297], [27.94, 0]],
+        ev: `Inspect.Gear.GrenadeToss`,
+        g: .03,
+        o: 1.524,
+        p: 1.1,
+        sw: 0
     },
     gear_small: {
-      c: [
-        [1.197, 1],
-        [10.138, .297],
-        [27.94, 0]
-      ],
-      ev: `Inspect.Gear.Small`,
-      g: .04,
-      p: 1.1,
-      sw: 0
+        c: [[1.197, 1], [10.138, .297], [27.94, 0]],
+        ev: `Inspect.Gear.Small`,
+        g: .04,
+        p: 1.1,
+        sw: 0
     },
     gear_ultrasmall: {
-      c: [
-        [1.197, 1],
-        [10.138, .297],
-        [27.94, 0]
-      ],
-      ev: `Inspect.Gear.UltraSmall`,
-      g: .03,
-      p: 1.1,
-      sw: 0
+        c: [[1.197, 1], [10.138, .297], [27.94, 0]],
+        ev: `Inspect.Gear.UltraSmall`,
+        g: .03,
+        p: 1.1,
+        sw: 0
     },
     grab_mp5sd: {
-      c: [
-        [1.357, 1],
-        [5.189, .3219],
-        [27.94, 0]
-      ],
-      ev: `Weapon_MP5.Grab`,
-      g: .2,
-      sw: 0
+        c: [[1.357, 1], [5.189, .3219], [27.94, 0]],
+        ev: `Weapon_MP5.Grab`,
+        g: .2,
+        sw: 0
     },
     grab_xm1014: {
-      c: [
-        [10.08, 1],
-        [28.114, 0]
-      ],
-      ev: `Weapon_XM1014.Grab`,
-      g: .3,
-      lpo: !0,
-      sw: 0
+        c: [[10.08, 1], [28.114, 0]],
+        ev: `Weapon_XM1014.Grab`,
+        g: .3,
+        lpo: !0,
+        sw: 0
     },
     handle_mp5sd: {
-      c: [
-        [10.08, 1],
-        [28.114, 0]
-      ],
-      ev: `Weapon_MP5.Handle`,
-      g: .1,
-      lpo: !0,
-      sw: 0
+        c: [[10.08, 1], [28.114, 0]],
+        ev: `Weapon_MP5.Handle`,
+        g: .1,
+        lpo: !0,
+        sw: 0
     },
     handles_scar20: {
-      c: [
-        [.958, 1],
-        [6.147, .3863],
-        [27.94, 0]
-      ],
-      ev: `Weapon_SCAR20.Handles`,
-      g: .2,
-      lpo: !0,
-      sw: 0
+        c: [[.958, 1], [6.147, .3863], [27.94, 0]],
+        ev: `Weapon_SCAR20.Handles`,
+        g: .2,
+        lpo: !0,
+        sw: 0
     },
     he_inspect01_handles: {
-      c: [
-        [10.08, 1],
-        [28.114, 0]
-      ],
-      dl: .2,
-      ev: `HEGrenade.Inspect01.Handles`,
-      g: .05,
-      lpo: !0,
-      sw: 0
+        c: [[10.08, 1], [28.114, 0]],
+        dl: .2,
+        ev: `HEGrenade.Inspect01.Handles`,
+        g: .05,
+        lpo: !0,
+        sw: 0
     },
     he_inspect02_catch: {
-      c: [
-        [10.08, 1],
-        [28.114, 0]
-      ],
-      dl: .2,
-      ev: `HEGrenade.Inspect02.Catch`,
-      g: .3,
-      lpo: !0,
-      sw: 0
+        c: [[10.08, 1], [28.114, 0]],
+        dl: .2,
+        ev: `HEGrenade.Inspect02.Catch`,
+        g: .3,
+        lpo: !0,
+        sw: 0
     },
     he_inspect02_toss1: {
-      c: [
-        [10.08, 1],
-        [28.114, 0]
-      ],
-      dl: .2,
-      ev: `HEGrenade.Inspect02.Toss1`,
-      g: .2,
-      lpo: !0,
-      sw: 0
+        c: [[10.08, 1], [28.114, 0]],
+        dl: .2,
+        ev: `HEGrenade.Inspect02.Toss1`,
+        g: .2,
+        lpo: !0,
+        sw: 0
     },
     he_inspect02_toss2: {
-      c: [
-        [10.08, 1],
-        [28.114, 0]
-      ],
-      dl: .2,
-      ev: `HEGrenade.Inspect02.Toss2`,
-      g: .2,
-      lpo: !0,
-      sw: 0
+        c: [[10.08, 1], [28.114, 0]],
+        dl: .2,
+        ev: `HEGrenade.Inspect02.Toss2`,
+        g: .2,
+        lpo: !0,
+        sw: 0
     },
     headshot_kill: {
-      c: [
-        [2.653, 1],
-        [18.76, .8051]
-      ],
-      ev: `Player.DeathHeadShot.AttackerFeedback`,
-      g: .4,
-      o: 1.524
+        c: [[2.653, 1], [18.76, .8051]],
+        ev: `Player.DeathHeadShot.AttackerFeedback`,
+        g: .4,
+        o: 1.524
     },
     headshot_kill_dink: {
-      c: [
-        [2.653, 1],
-        [27.94, .7743]
-      ],
-      ev: `Player.DeathHeadShot.AttackerFeedback.Dink`,
-      g: .6,
-      o: 1.524,
-      p: 1.1
+        c: [[2.653, 1], [27.94, .7743]],
+        ev: `Player.DeathHeadShot.AttackerFeedback.Dink`,
+        g: .6,
+        o: 1.524,
+        p: 1.1
     },
     headshot_kill_flesh: {
-      c: [
-        [.399, 1],
-        [27.94, .7639]
-      ],
-      ev: `Player.DeathHeadShot.AttackerFeedback.Flesh`,
-      g: .3,
-      o: 1.524
+        c: [[.399, 1], [27.94, .7639]],
+        ev: `Player.DeathHeadShot.AttackerFeedback.Flesh`,
+        g: .3,
+        o: 1.524
     },
     hit_armor: {
-      c: [
-        [0, 1],
-        [.897, 1],
-        [15.088, 0]
-      ],
-      ev: `Player.DamageKevlar`,
-      g: .5,
-      o: 1.524
+        c: [[0, 1], [.897, 1], [15.088, 0]],
+        ev: `Player.DamageKevlar`,
+        g: .5,
+        o: 1.524
     },
     hit_armor_fb: {
-      c: [
-        [.544, 1],
-        [27.074, .2148]
-      ],
-      ev: `Player.DamageBodyArmor.AttackerFeedback`,
-      g: 1.2,
-      kid: `hit_armor_fb_flesh`,
-      o: 1.524,
-      p: 1.3
+        c: [[.544, 1], [27.074, .2148]],
+        ev: `Player.DamageBodyArmor.AttackerFeedback`,
+        g: 1.2,
+        kid: `hit_armor_fb_flesh`,
+        o: 1.524,
+        p: 1.3
     },
     hit_armor_fb_flesh: {
-      c: [
-        [.544, 1],
-        [27.074, .2148]
-      ],
-      dl: .1,
-      ev: `Player.DamageBodyArmor.AttackerFeedbackFlesh`,
-      g: .3,
-      o: 1.524,
-      p: 1.3
+        c: [[.544, 1], [27.074, .2148]],
+        dl: .1,
+        ev: `Player.DamageBodyArmor.AttackerFeedbackFlesh`,
+        g: .3,
+        o: 1.524,
+        p: 1.3
     },
     hit_body: {
-      c: [
-        [1.016, 1],
-        [6.314, .4618],
-        [15.24, 0]
-      ],
-      ev: `Flesh.BulletImpact`,
-      g: .7,
-      r: [-.01, .01]
+        c: [[1.016, 1], [6.314, .4618], [15.24, 0]],
+        ev: `Flesh.BulletImpact`,
+        g: .7,
+        r: [-.01, .01]
     },
     hit_body_fb: {
-      c: [
-        [.544, 1],
-        [27.074, .2148]
-      ],
-      ev: `Player.DamageBody.AttackerFeedback`,
-      g: 1,
-      o: 1.524,
-      p: 1.3,
-      r: [-.01, .01]
+        c: [[.544, 1], [27.074, .2148]],
+        ev: `Player.DamageBody.AttackerFeedback`,
+        g: 1,
+        o: 1.524,
+        p: 1.3,
+        r: [-.01, .01]
     },
     hit_head: {
-      c: [
-        [2.653, 1],
-        [27.94, .7684]
-      ],
-      ev: `Player.DamageHeadShot.AttackerFeedback`,
-      g: .5,
-      o: 1.524
+        c: [[2.653, 1], [27.94, .7684]],
+        ev: `Player.DamageHeadShot.AttackerFeedback`,
+        g: .5,
+        o: 1.524
     },
     hit_head_dink: {
-      c: [
-        [2.653, 1],
-        [27.94, .7684]
-      ],
-      ev: `Player.DamageHeadShotArmor.AttackerFeedback`,
-      g: .5,
-      o: 1.524
+        c: [[2.653, 1], [27.94, .7684]],
+        ev: `Player.DamageHeadShotArmor.AttackerFeedback`,
+        g: .5,
+        o: 1.524
     },
     hit_head_flesh: {
-      c: [
-        [.399, 1],
-        [27.94, .7639]
-      ],
-      ev: `Player.DeathHeadShot.AttackerFeedback.Flesh`,
-      g: .3,
-      o: 1.524
+        c: [[.399, 1], [27.94, .7639]],
+        ev: `Player.DeathHeadShot.AttackerFeedback.Flesh`,
+        g: .3,
+        o: 1.524
     },
     hurt: {
-      c: [
-        [0, 1],
-        [20.32, 0]
-      ],
-      ev: `Player.DamageFall`,
-      g: 1,
-      o: 1.524
+        c: [[0, 1], [20.32, 0]],
+        ev: `Player.DamageFall`,
+        g: 1,
+        o: 1.524
     },
     hurt_victim: {
       c: [
