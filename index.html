@@ -1475,6 +1475,8 @@ window.__cs2UiScale = function () {
   #menu-root .go-status { display: none; margin-left: 16px; font-size: 12px; font-weight: 700; letter-spacing: 1.5px; color: #6fd066; text-transform: uppercase; text-shadow: 0 0 8px rgba(79,166,74,0.4); }
   #menu-root .go-status.show { display: inline-block; animation: mm-pulse 1.2s infinite ease-in-out; }
   @keyframes mm-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+  #menu-root .mm-stats { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; margin-left: 16px; font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #8e98a3; text-transform: uppercase; }
+  #menu-root .mm-stats b { color: #6fd066; font-weight: 700; }
   #menu-root .play-bottom .go-wrap { display: flex; align-items: center; justify-content: center; }
   #menu-root .play-side { position: absolute; right: 12px; top: 80px; width: 36px; display: flex; flex-direction: column; align-items: center; gap: 14px; z-index: 6; color: #6f7a85; }
   #menu-root .play-side .side-icon { width: 22px; height: 22px; display: grid; place-items: center; cursor: pointer; transition: color .15s; }
@@ -1736,6 +1738,7 @@ window.__cs2UiScale = function () {
             <span class="label">GO</span>
           </button>
             <span class="go-status" id="mmGoStatus">Entering server...</span>
+            <div class="mm-stats"><span>Rooms: <b id="mmRoomsN">-</b></span><span>Players online: <b id="mmPlayersN">-</b></span></div>
           </div>
         </div>
         <div class="play-side">

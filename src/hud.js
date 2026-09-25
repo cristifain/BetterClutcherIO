@@ -9,7 +9,7 @@ import { applySniperWidth, buildCrosshair, updateCrosshair, xhairHitEnabled } fr
 import { A as t, A as mmCyl, H as mmGroup, Ht as mmVec, it as mmBasic, kt as mmSphere, rt as mmMesh, ct as mmStdMat } from "./three-B50Y55N1.js";
 import { initMultiplayer, requestMatch } from "./netcode.js";
 import { onGameShot } from "./pviewmodel.js";
-import { rayPointDist } from "./shared.js";
+import { rayPointDist, WS_BASE } from "./shared.js";
 import { $m, Ar, Av, Ba, Bm, Cr, Cs, Cv, Dr, Dv, Er, Ev, Fm, Fu, Gm, H, Iu, Km, Lu, Mo, Mu, Mv, Nu, Ov, Pu, Qg, Ru, Sv, Tr, Tv, Um, V, V_, Va, Xm, Z, __p_KGFS_MAIN_STR, __p_V5bL_array, __p_nino_bufferToString, _s, as, br, bv, eh, gs, ju, jv, kr, ku, kv, ps, qm, th, wv, xr, xv, yr, ys, zm } from "./main.js";
 
 var Nv = class e {
@@ -1797,12 +1797,13 @@ var Nv = class e {
         return
       }
       // online: zero bots guaranteed (window flag clamps botMgr.setup), then
-      // matchmake into a server running this exact map
+      // matchmake into a server running this exact map. startGame ends in the
+      // native team-select so each player picks their own team.
       try {
         window.__clutcherOnlineMatch = !0
       } catch {}
       this["_mmOnlineInit"]();
-      Promise.resolve(game.startGame(r, 0, t, i)).then(() => game.finishTeamSelect("CT")).then(() => this["_mmNet"].requestMatch(r)).catch(() => {
+      Promise.resolve(game.startGame(r, 0, t, i)).then(() => this["_mmNet"].requestMatch(r)).then(() => o()).catch(() => {
         o();
         try {
           window.__clutcherOnlineMatch = !1
@@ -1913,8 +1914,19 @@ var Nv = class e {
       }
     }
 
+    // ---- live server stats next to the GO button (Rooms / Players online)
+    let roomsEl = q("#mmRoomsN"), playersEl = q("#mmPlayersN");
+    let pollStats = () => {
+      fetch(WS_BASE.replace("wss://", "https://") + "/stats").then(e => e.json()).then(e => {
+        roomsEl && (roomsEl.textContent = e.rooms), playersEl && (playersEl.textContent = e.players)
+      })["catch"](() => {})
+    };
+    setInterval(pollStats, 5000), pollStats();
+
     // ---- sync on every menu open
     this["_mmSync"] = () => {
+      // menu visible = not in a match: drop any online session (bots re-enable)
+      if (this["_mmNet"] && this["_mmNet"]["isConnected"]()) this["_mmNet"]["disconnectOnline"]();
       setCat(read("clutcher_cat", "matchmaking")), setMode(read("clutcher_mode", "defusal")), setDiff(parseInt(read("clutcher_diff", "2")) || 0), setBots(parseInt(read("clutcher_botcount", "10")) || 0);
       goBtn.classList.remove("starting"), goStatus && goStatus.classList.remove("show");
       let e = root.querySelector(".map-col.sel");
@@ -1934,12 +1946,20 @@ var Nv = class e {
     let self = this;
     let game = this["game"];
     let markers = self["_mmMarkers"] = new Map();
+    let roster = self["_mmRoster"] = new Map(); // id -> { team, alive }
     let mmDir = new mmVec, mmPos = new mmVec;
+    let pushRoster = () => {
+      // the scorebar team counter reads game.onlinePlayers (see updateScorebar)
+      try {
+        game["onlinePlayers"] = [...roster].map(e => ({ id: e[0], team: e[1].team, alive: e[1].alive }))
+      } catch {}
+    };
 
     function marker(e) {
       let t = new mmGroup;
       t["name"] = "mremote_" + e;
       let n = new mmStdMat({ color: 0xc05040 });
+      t["userData"]["mat"] = n;
       let r = new mmMesh(new mmCyl(.3, .3, 1.5, 10), n);
       r["position"]["y"] = .75, t["add"](r);
       let i = new mmMesh(new mmSphere(.22, 10, 8), n);
@@ -1947,24 +1967,34 @@ var Nv = class e {
       return t
     }
 
+    function setTeamColor(e, t) {
+      let n = e && e["userData"]["mat"];
+      n && n["color"]["setHex"](t === "CT" ? 0x4a6890 : t === "T" ? 0xa8814a : 0xc05040)
+    }
+
     self["_mmNet"] = initMultiplayer({
       scene: game["scene"],
       camera: game["camera"],
       getPlayerTransform: () => {
         let e = game["player"];
-        return { x: e["x"], y: e["y"], z: e["z"], ry: e["yaw"], pitch: e["pitch"], onGround: e["onGround"] }
+        return { x: e["x"], y: e["y"], z: e["z"], ry: e["yaw"], pitch: e["pitch"], onGround: e["onGround"], team: e["team"] }
       },
       spawnRemotePlayer: (e, t) => {
         let n = marker(e);
-        n["position"]["set"](t.x || 0, t.y || 0, t.z || 0), n["rotation"]["y"] = t.ry || 0, game["scene"]["add"](n), markers.set(e, n)
+        n["position"]["set"](t.x || 0, t.y || 0, t.z || 0), n["rotation"]["y"] = t.ry || 0, setTeamColor(n, t.team), game["scene"]["add"](n), markers.set(e, n), roster.set(e, { team: t.team, alive: (t.hp == null ? 100 : t.hp) > 0 }), pushRoster()
       },
       applyRemoteUpdate: (e, t) => {
         let n = markers.get(e);
-        n && (n["position"]["set"](t.x, t.y, t.z), n["rotation"]["y"] = t.ry || 0)
+        n && (n["position"]["set"](t.x, t.y, t.z), n["rotation"]["y"] = t.ry || 0, t.team && n["userData"]["team"] !== t.team && (n["userData"]["team"] = t.team, setTeamColor(n, t.team)));
+        let r = roster.get(e);
+        if (r && t.team && r.team !== t.team) {
+          r.team = t.team, pushRoster()
+        }
       },
       despawnRemotePlayer: e => {
         let t = markers.get(e);
-        t && (game["scene"]["remove"](t), markers.delete(e))
+        t && (game["scene"]["remove"](t), markers.delete(e));
+        if (roster["delete"](e)) pushRoster()
       },
       onShot: e => {
         try {
@@ -1978,13 +2008,14 @@ var Nv = class e {
           self["_mmLastHp"] == null && (self["_mmLastHp"] = 100);
           e.hp < self["_mmLastHp"] && self["damageFlash"]();
           self["_mmLastHp"] = e.hp;
-          try {
-            game["player"]["health"] = e.hp
-          } catch {}
           return
         }
         let n = markers.get(e.id);
-        n && (n["visible"] = e.hp > 0)
+        n && (n["visible"] = e.hp > 0);
+        let r = roster.get(e.id);
+        if (r) {
+          r.alive = e.hp > 0, pushRoster()
+        }
       },
       onDead: e => {
         let t = self["_mmNet"] && self["_mmNet"]["getMyId"]();
@@ -1993,7 +2024,11 @@ var Nv = class e {
           return
         }
         let n = markers.get(e.id);
-        n && (n["visible"] = !1)
+        n && (n["visible"] = !1);
+        let r = roster.get(e.id);
+        if (r) {
+          r.alive = !1, pushRoster()
+        }
       },
       onSelfSpawn: () => {}
     });
@@ -2286,7 +2321,7 @@ var Nv = class e {
     if (i !== this["_sbHTML"] && (this["_sbHTML"] = i, this["scorebar"]["innerHTML"] = i, this["avCTCount"] && e["modeCtl"])) {
       let t = 0x0;
       let n = 0x0;
-      for (let r of e["allEntities"]()) {
+      for (let r of [...e["allEntities"](), ...(e["onlinePlayers"] || [])]) {
         r["alive"] && (r["team"] === "CT" ? t++ : n++)
       }
       this["avCTCount"]["textContent"] = t, this["avTCount"]["textContent"] = n

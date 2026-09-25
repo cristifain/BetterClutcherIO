@@ -104,10 +104,10 @@ function openRemotes(list) {
     remotes.set(p.id, {
       x: p.x || 0, y: p.y || 0, z: p.z || 0, ry: p.ry || 0,
       tx: p.x || 0, ty: p.y || 0, tz: p.z || 0, ttry: p.ry || 0,
-      hp: p.hp == null ? 100 : p.hp
+      hp: p.hp == null ? 100 : p.hp, team: p.team
     });
     try {
-      opts.spawnRemotePlayer(p.id, { x: p.x || 0, y: p.y || 0, z: p.z || 0, ry: p.ry || 0, hp: p.hp == null ? 100 : p.hp })
+      opts.spawnRemotePlayer(p.id, { x: p.x || 0, y: p.y || 0, z: p.z || 0, ry: p.ry || 0, hp: p.hp == null ? 100 : p.hp, team: p.team })
     } catch {}
   }
 }
@@ -157,6 +157,7 @@ function handleMsg(m) {
       isNum(m.y) && (r.ty = m.y);
       isNum(m.z) && (r.tz = m.z);
       isNum(m.ry) && (r.ttry = m.ry);
+      if (m.tm === "CT" || m.tm === "T") r.team = m.tm;
       break
     }
     case "sh": {
@@ -251,7 +252,7 @@ function sendState() {
     return
   }
   lastSent = { x: t.x, y: t.y, z: t.z }, lastSentT = now;
-  send({ t: "s", x: t.x, y: t.y, z: t.z, ry: t.ry, vt: now })
+  send({ t: "s", x: t.x, y: t.y, z: t.z, ry: t.ry, tm: t.team, vt: now })
 }
 
 export function sendShot(ox, oy, oz, dx, dy, dz) {
@@ -290,7 +291,7 @@ function frame(now) {
       r.ry += clamp(angDiff(r.ry, r.ttry), -8 * dt, 8 * dt) // yaw wrap-around safe
     }
     try {
-      opts.applyRemoteUpdate(r.id, { x: r.x, y: r.y, z: r.z, ry: r.ry, hp: r.hp })
+      opts.applyRemoteUpdate(r.id, { x: r.x, y: r.y, z: r.z, ry: r.ry, hp: r.hp, team: r.team })
     } catch {}
   }
   // viewmodel: bob/sway/recoil from the local player's transform rate
@@ -322,9 +323,27 @@ function stopLoops() {
   cancelAnimationFrame(rafId), rafId = 0;
 }
 
+// leave the online session entirely (menu opened / quit): drops remotes,
+// closes the socket, clears the online flag so practice bots work again
+export function disconnectOnline() {
+  intentionalClose = !0;
+  for (let id of [...remotes.keys()]) {
+    remotes.delete(id);
+    try {
+      opts && opts.despawnRemotePlayer(id)
+    } catch {}
+  }
+  try {
+    ws && ws.close()
+  } catch {}
+  ws = null, connected = !1, myId = null;
+  stopLoops();
+  setOnline(!1);
+}
+
 // ---- single entry point ----
 export function initMultiplayer(o) {
   opts = o || {};
   initViewModel(opts.scene, opts.camera);
-  return { requestMatch, sendShot, sendHit, getMyId, isConnected, isOnlineMatch, getViewModel }
+  return { requestMatch, sendShot, sendHit, getMyId, isConnected, isOnlineMatch, getViewModel, disconnectOnline }
 }
