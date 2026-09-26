@@ -726,7 +726,8 @@ var Nv = class e {
       this["closeCase"](), e && this["openCaseFlow"](e)
     }, this["renderBinds"](), this["renderCases"](), this["refreshMenuChrome"]()
   } ["playerName"]() {
-    return localStorage["getItem"]("clutcher_name") || "Player"
+    // the account username is the identity; fall back for pre-account profiles
+    return this["_inv"] && this["_inv"]["username"] || localStorage.getItem("clutcher_name") || "Player"
   } ["refreshMenuChrome"]() {
     let e = this["playerName"]();
     let t = H["load"]()["stats"]["rating"] == null ? 0x3e8 : H["load"]()["stats"]["rating"];
@@ -1694,6 +1695,8 @@ var Nv = class e {
     this["_mmRoot"] = this["_mmRoot"] || document["getElementById"]("menu-root");
     if (this["_mmRoot"]) {
       this["_mmRoot"]["classList"]["add"]("open");
+      // returning from a match: drop any open settings/market/inventory view
+      this["_mmRoot"]["_showHome"] && this["_mmRoot"]["_showHome"]();
       if (!this["_mmWired"]) {
         this["_mmWired"] = !0x0;
         try {
@@ -1882,11 +1885,8 @@ var Nv = class e {
       })
     });
 
-    // ---- settings: player name
-    let nameIn = q("#mmName");
-    nameIn.addEventListener("input", () => {
-      store("clutcher_name", nameIn.value), this["refreshMenuChrome"]()
-    });
+    // ---- player name: comes from the account (fixed at registration), so
+    // there is no name setting in the menu anymore
 
     // ---- account (auth): username + password (+ confirm) register/login.
     // The bearer token persists in localStorage, so the browser stays logged
@@ -2028,7 +2028,7 @@ var Nv = class e {
       setCat(read("clutcher_cat", "matchmaking")), setMode(read("clutcher_mode", "defusal")), setDiff(parseInt(read("clutcher_diff", "2")) || 0), setBots(parseInt(read("clutcher_botcount", "10")) || 0);
       goBtn.classList.remove("starting"), goStatus && goStatus.classList.remove("show");
       let e = root.querySelector(".map-col.sel");
-      e || setMap("dusker"), nameIn.value = read("clutcher_name", "Player");
+      e || setMap("dusker");
       for (let t of paints) try {
         t()
       } catch {}
@@ -2298,6 +2298,8 @@ var Nv = class e {
           self["_mmLastHp"] = 0;
           return
         }
+        // online kill: the server saw this death - award the killer's tokens
+        if (e.killer && e.killer === t) self["_awardKill"](!0x0);
         let n = remoteRec(e.id);
         n.alive = false;
         let r = roster.get(e.id);
@@ -2432,8 +2434,9 @@ var Nv = class e {
       + '</div>'
       + '<button id="apLogout" type="button" class="ap-logout">LOG OUT</button>'
       + '<div class="ap-status" id="apStatus"></div>';
-    let host = document.getElementById("mmName");
-    (host && host.parentElement ? host.parentElement : this["menuEl"]).appendChild(panel);
+    // anchored to the settings view content (the old name-input row is gone)
+    let host = document.querySelector("#mmSettingsView .settings-content");
+    (host || this["menuEl"]).insertBefore(panel, host ? host.firstChild : null);
     let ui = panel.querySelector("#apUser"), pi = panel.querySelector("#apPass"), p2 = panel.querySelector("#apPass2");
     let st = panel.querySelector("#apStatus");
     let getToken = () => {
@@ -2531,9 +2534,13 @@ var Nv = class e {
       }, 400)
     };
   } ["_syncMenuTokens"]() {
+    // token balance lives in the top nav, right of NEWS
     try {
-      let el = this["menuEl"] && this["menuEl"].querySelector("#coins");
-      el && (el.innerHTML = "" + (this["_inv"] ? this["_inv"]["tokens"] : 0x0) + " <i>T</i>")
+      let t = this["_inv"] ? this["_inv"]["tokens"] : 0x0;
+      let el = document.getElementById("mmTokens");
+      el && (el.innerHTML = t + " <i>T</i>");
+      let old = this["menuEl"] && this["menuEl"].querySelector("#coins");
+      old && (old.innerHTML = t + " <i>T</i>");
     } catch {}
   } ["_requireAuth"](t) {
     // entering the game requires an account: register/login overlay over the
@@ -2593,6 +2600,11 @@ var Nv = class e {
       body: body ? JSON.stringify(body) : undefined
     }).then(r => r.json().then(j => ({ ok: r.ok, j })))
   } ["_marketBuy"](item) {
+    // buying requires an account: pop the login gate, resume after
+    if (!this["_inv"]) {
+      this["_requireAuth"](() => this["_marketBuy"](item));
+      return
+    }
     this["_marketApi"]("/api/market/buy", { item }).then(({ ok, j }) => {
       if (ok && j && j.inv) {
         this["_inv"] = j.inv, H["hydrateServer"](j.inv), this["renderMarket"](), this["renderLocker"](), this["_syncMenuTokens"](), this["game"]["audio"]["play"]("buy");
@@ -2652,22 +2664,14 @@ var Nv = class e {
       this["openCaseFlow"](def, { skin: n, item: r });
     })["catch"](() => {})
   } ["renderMarket"]() {
-    // MARKET view: BUY only - cases are opened from the INVENTORY view
+    // MARKET view: cards only - icon, name, buy button
     let w = document.querySelector("#mmMarketWrap") || this["menuEl"].querySelector("#mkwrap");
     if (!w) return;
-    let inv = this["_inv"];
-    let rows = "";
-    rows += '<div class="mk-sec">BUY - <b>' + MARKET_PRICE + ' TOKENS</b> EACH</div><div class="mk-shop">';
+    let rows = '<div class="mk-shop">';
     for (let c of MARKET_CASES) {
-      rows += '<div class="mk-card"><img src="' + c.iconUrl + '" alt=""><div class="mk-name">' + c.name + '</div><button class="mk-buy" data-buy="case:' + c.id + '">BUY ' + MARKET_PRICE + ' T</button><div class="mk-own">' + ((inv && inv.cases && inv.cases[c.id]) || 0) + ' owned</div></div>'
+      rows += '<div class="mk-card"><img src="' + c.iconUrl + '" alt=""><div class="mk-name">' + c.name + '</div><button class="mk-buy" data-buy="case:' + c.id + '">BUY ' + MARKET_PRICE + ' T</button></div>'
     }
-    rows += '<div class="mk-card"><img src="' + UNIKEY.icon + '" alt=""><div class="mk-name">' + UNIKEY.name + '</div><button class="mk-buy" data-buy="key">BUY ' + MARKET_PRICE + ' T</button><div class="mk-own">' + ((inv && inv.keys) || 0) + ' owned</div></div></div>';
-    rows += '<div class="mk-note">Cases are opened from your <b>INVENTORY</b> - each open uses one case + one Universal Key. Rewards are rolled on the server.</div>';
-    if (inv) {
-      rows += '<div class="mk-sec">BALANCE</div><div class="mk-stat">TOKENS: <b>' + inv.tokens + '</b> &middot; UNIVERSAL KEYS: <b>' + inv.keys + '</b></div>';
-    } else {
-      rows += '<div class="mk-sec">LOG IN TO BUY AND OPEN CASES</div>';
-    }
+    rows += '<div class="mk-card"><img src="' + UNIKEY.icon + '" alt=""><div class="mk-name">' + UNIKEY.name + '</div><button class="mk-buy" data-buy="key">BUY ' + MARKET_PRICE + ' T</button></div></div>';
     w.innerHTML = rows;
     w.querySelectorAll(".mk-buy").forEach(b => {
       b.onclick = ev => {
@@ -2675,8 +2679,8 @@ var Nv = class e {
       }
     });
   } ["renderLocker"]() {
-    // INVENTORY view: owned cases (OPEN buttons - the only way to open a case)
-    // and every owned skin/knife with its artwork icon; equips sync to the server.
+    // INVENTORY view: cards only - owned cases with OPEN, owned skins/knives
+    // with their artwork icon and EQUIP
     let w = document.querySelector("#mmInvWrap") || this["menuEl"].querySelector("#tab-locker");
     if (!w) return;
     let inv = this["_inv"];
@@ -2687,28 +2691,22 @@ var Nv = class e {
       let it = H["item"](uid);
       it && (eqWpn[uid] = wd)
     }
-    let rows = '<div class="lk-stat">' + (inv
-      ? 'TOKENS: <b>' + inv.tokens + '</b> &middot; UNIVERSAL KEYS: <b>' + inv.keys + '</b>'
-      : 'Log in to sync your inventory with the server.') + '</div>';
-    rows += '<div class="mk-sec">YOUR CASES - CLICK OPEN (USES 1 UNIVERSAL KEY)</div><div class="mk-shop">';
-    let anyCase = !0x1;
+    let rows = '<div class="mk-shop">';
+    let noKeys = !inv || (inv.keys || 0) < 1;
     for (let c of MARKET_CASES) {
       let n = (inv && inv.cases && inv.cases[c.id]) || 0;
       if (!n) continue;
-      anyCase = !0x0;
-      rows += '<div class="mk-card"><img src="' + c.iconUrl + '" alt=""><div class="mk-name">' + c.name + ' \u00d7' + n + '</div><button class="mk-buy" data-open="' + c.id + '"' + ((inv.keys || 0) < 1 ? " disabled" : "") + '>OPEN</button><div class="mk-own">' + ((inv.keys || 0) < 1 ? "needs a Universal Key" : "keys ready: " + inv.keys) + '</div></div>'
+      rows += '<div class="mk-card"><img src="' + c.iconUrl + '" alt=""><div class="mk-name">' + c.name + '</div><button class="mk-buy" data-open="' + c.id + '"' + (noKeys ? " disabled" : "") + '>OPEN</button></div>'
     }
-    rows += anyCase ? '</div>' : '</div><div class="mk-note">No cases yet - buy them in the MARKET tab.</div>';
-    rows += '<div class="mk-sec">YOUR SKINS &amp; KNIVES</div><div class="lk-grid">';
-    rows += items.length ? items.map(it => {
+    rows += '</div><div class="lk-grid">';
+    rows += items.map(it => {
       let p = ps[it["skin"]];
       let isEq = !!eqWpn[it["uid"]];
       return '<div class="lk-card' + (isEq ? " eq" : "") + '">'
         + '<img class="lk-img" src="' + (p && p["img"] || "") + '" alt="">'
         + '<div class="lk-name">' + (p && p["name"] || it["skin"]) + '</div>'
-        + '<div class="lk-wpn">' + ((p && p["weapon"] || "") + (p && p["rarity"] ? " \u00b7 " + p["rarity"] : "")).toUpperCase() + '</div>'
         + '<button class="lk-eq" data-uid="' + it["uid"] + '"' + (isEq ? " disabled" : "") + '>' + (isEq ? "EQUIPPED" : "EQUIP") + '</button></div>'
-    }).join("") : '<div class="mk-note">No skins yet - buy a case in the MARKET and open it here.</div>';
+    }).join("");
     rows += '</div>';
     w.innerHTML = rows;
     w.querySelectorAll(".mk-buy[data-open]").forEach(b => {
@@ -2721,6 +2719,18 @@ var Nv = class e {
         H["equip"](b.dataset.uid), H["save"](), this["renderLocker"](), this["game"]["audio"]["play"]("buy")
       }
     });
+  } ["_awardKill"](online) {
+    // kill reward, server-side balance: +1 token in practice, +1.5 online
+    let API = WS_BASE.replace("wss://", "https://");
+    fetch(API + "/api/kill", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + this["_authToken"]() },
+      body: JSON.stringify({ online: !!online })
+    }).then(r => r.ok ? r.json() : null).then(j => {
+      if (j && j.inv) {
+        this["_inv"] = j.inv, this["_syncMenuTokens"]();
+      }
+    })["catch"](() => {})
   } ["showPause"]() {
     this["buyOpen"] || (this["_renderPauseKeys"](), this["_lockNotice"](), this["pauseEl"]["style"]["display"] = "flex", this["pauseOpen"] = !0x0)
   } ["hidePause"]() {
