@@ -877,7 +877,7 @@ window.__cs2UiScale = function () {
   .mk-sec { font-family: 'Stratum2 Bold TF', 'Stratum2'; font-size: 15px; letter-spacing: 1.5px; color: #9aa4b0;
     margin: 22px 0 10px; }
   .mk-sec b { color: #e2c46a; }
-  .mk-shop { display: flex; gap: 14px; flex-wrap: wrap; }
+  .mk-shop { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
   .mk-card { width: 200px; padding: 12px; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px;
     background: rgba(10,13,16,0.8); color: #fff; text-align: center; }
   .mk-card[data-crate] { cursor: pointer; transition: border-color 0.12s; }
@@ -910,6 +910,24 @@ window.__cs2UiScale = function () {
   .mk-skin { padding: 4px 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;
     background: rgba(10,13,16,0.8); font-size: 12px; color: #cfd6dc; }
   .mk-skin.none { color: #7d8894; }
+
+  /* INVENTORY (locker) tab - owned finishes with equip buttons */
+  .lk-stat { font-size: 13.5px; color: #c9d2da; margin-bottom: 14px; }
+  .lk-stat b { color: #e2c46a; }
+  .lk-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+  .lk-card { width: 210px; padding: 12px; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px;
+    background: rgba(10,13,16,0.8); color: #fff; }
+  .lk-card.eq { border-color: rgba(120,200,110,0.5); }
+  .lk-wpn { font-family: 'Stratum2 Mono'; font-size: 11px; color: #7d8894; letter-spacing: 1px; }
+  .lk-name { font-family: 'stratum2 condensed', 'Stratum2'; font-size: 17px; margin: 3px 0 1px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lk-card .mk-rid { margin-bottom: 9px; }
+  .lk-eq { width: 100%; padding: 6px 0; border: 1px solid rgba(226,196,106,0.45); border-radius: 4px;
+    background: rgba(226,196,106,0.12); color: #e2c46a; font-family: 'Stratum2 Bold TF', 'Stratum2';
+    font-size: 12px; letter-spacing: 1px; cursor: pointer; }
+  .lk-eq:hover { background: rgba(226,196,106,0.28); color: #fff; }
+  .lk-eq[disabled] { border-color: rgba(120,200,110,0.4); background: rgba(120,200,110,0.1);
+    color: #8fd47e; cursor: default; }
 
   .tabpage { position: absolute; inset: 92px 0 0 0; display: none; }
   .tabpage.sel { display: block; }
@@ -1463,6 +1481,7 @@ window.__cs2UiScale = function () {
   #menu-root .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; z-index: 2; }
   #menu-root .view { display: none; flex-direction: column; flex: 1; overflow: hidden; position: relative; }
   #menu-root .view.open { display: flex; }
+  #menu-root .market-view { padding: 26px 34px 60px; overflow-y: auto; }
   #menu-root .view.open::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 20; border: 1px solid rgba(79,166,74,0.25);
     box-shadow: inset 0 0 20px rgba(79,166,74,0.06), inset 0 0 60px rgba(79,166,74,0.03); }
   #menu-root .placeholder-content { flex: 1; display: flex; align-items: center; justify-content: center; color: #3a424a; font-size: 14px; letter-spacing: 2px; text-transform: uppercase; font-weight: 700; }
@@ -1634,18 +1653,18 @@ window.__cs2UiScale = function () {
         <div class="icon-btn active" id="mmHomeBtn" title="Home">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 10v10h14V10"/></svg>
         </div>
-        <div class="icon-btn mm-soon" title="Inventory">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="14" rx="1"/><path d="M3 10h18"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>
+        <div class="icon-btn" id="mmMarketBtn" title="Marketplace">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7l1.5-4h13L20 7"/><path d="M4 7h16l-1.2 12.2a2 2 0 0 1-2 1.8H7.2a2 2 0 0 1-2-1.8L4 7z"/><path d="M9 11a3 3 0 0 0 6 0"/></svg>
         </div>
         <div class="icon-btn" id="mmSettingsBtn" title="Settings">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         </div>
       </div>
       <div class="nav">
-        <div class="nav-tab mm-soon">INVENTORY</div>
+        <div class="nav-tab" id="mmInvTab">INVENTORY</div>
         <div class="nav-tab mm-soon">LOADOUT</div>
         <div class="nav-tab active" id="mmPlayTab">PLAY</div>
-        <div class="nav-tab mm-soon">STORE</div>
+        <div class="nav-tab" id="mmMarketTab">STORE</div>
         <div class="nav-tab mm-soon">NEWS</div>
       </div>
       <div class="topbar-right"><div class="user-btn" title="Profile"><span class="user-square"></span></div></div>
@@ -1751,6 +1770,24 @@ window.__cs2UiScale = function () {
           </div>
 
         </div>
+      </div>
+
+      <!-- ===== MARKETPLACE VIEW (server-authoritative economy) ===== -->
+      <div class="view settings-view" id="mmMarketView">
+        <div class="settings-header-top">
+          <div class="header-tab active">MARKETPLACE</div>
+          <button class="header-close" id="mmMarketClose" title="Close">✕</button>
+        </div>
+        <div class="market-view" id="mmMarketWrap"></div>
+      </div>
+
+      <!-- ===== INVENTORY VIEW ===== -->
+      <div class="view settings-view" id="mmInvView">
+        <div class="settings-header-top">
+          <div class="header-tab active">INVENTORY</div>
+          <button class="header-close" id="mmInvClose" title="Close">✕</button>
+        </div>
+        <div class="market-view" id="mmInvWrap"></div>
       </div>
 
       <!-- ===== PLAY VIEW ===== -->
@@ -1872,11 +1909,18 @@ window.__cs2UiScale = function () {
     if (!root) return;
     var homeBtn = document.getElementById('mmHomeBtn');
     var settingsBtn = document.getElementById('mmSettingsBtn');
+    var marketBtn = document.getElementById('mmMarketBtn');
     var playTab = document.getElementById('mmPlayTab');
+    var invTab = document.getElementById('mmInvTab');
+    var marketTab = document.getElementById('mmMarketTab');
     var homeView = document.getElementById('mmHome');
     var settingsView = document.getElementById('mmSettingsView');
+    var marketView = document.getElementById('mmMarketView');
+    var invView = document.getElementById('mmInvView');
     var playView = document.getElementById('mmPlayView');
     var closeBtn = document.getElementById('mmSettingsClose');
+    var marketClose = document.getElementById('mmMarketClose');
+    var invClose = document.getElementById('mmInvClose');
     var toast = document.getElementById('mmToast');
     var toastT = 0;
 
@@ -1890,13 +1934,17 @@ window.__cs2UiScale = function () {
 
     function hideViews() {
       settingsView.classList.remove('open');
+      marketView.classList.remove('open');
+      invView.classList.remove('open');
       playView.classList.remove('open');
       homeView.style.display = 'none';
     }
     function setActiveIcon(which) {
       homeBtn.classList.remove('active');
       settingsBtn.classList.remove('active');
+      marketBtn.classList.remove('active');
       if (which === 'settings') settingsBtn.classList.add('active');
+      else if (which === 'market') marketBtn.classList.add('active');
       else homeBtn.classList.add('active');
     }
     function showHome() {
@@ -1909,6 +1957,16 @@ window.__cs2UiScale = function () {
       settingsView.classList.add('open');
       setActiveIcon('settings');
     }
+    function openMarket() {
+      hideViews();
+      marketView.classList.add('open');
+      setActiveIcon('market');
+    }
+    function openInv() {
+      hideViews();
+      invView.classList.add('open');
+      setActiveIcon('market');
+    }
     function openPlay() {
       hideViews();
       playView.classList.add('open');
@@ -1916,12 +1974,19 @@ window.__cs2UiScale = function () {
     }
     root._openPlay = openPlay;
     root._openSettings = openSettings;
+    root._openMarket = openMarket;
+    root._openInv = openInv;
     root._showHome = showHome;
 
     homeBtn.addEventListener('click', function (e) { e.stopPropagation(); showHome(); });
     settingsBtn.addEventListener('click', function (e) { e.stopPropagation(); openSettings(); });
+    marketBtn.addEventListener('click', function (e) { e.stopPropagation(); openMarket(); });
     playTab.addEventListener('click', function (e) { e.stopPropagation(); openPlay(); });
+    invTab.addEventListener('click', function (e) { e.stopPropagation(); openInv(); });
+    marketTab.addEventListener('click', function (e) { e.stopPropagation(); openMarket(); });
     closeBtn.addEventListener('click', function () { showHome(); });
+    marketClose.addEventListener('click', function () { showHome(); });
+    invClose.addEventListener('click', function () { showHome(); });
 
     // settings header tabs
     var headerTabs = root.querySelectorAll('.header-tab[data-mmtab]');

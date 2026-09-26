@@ -1734,6 +1734,12 @@ var Nv = class e {
     let toast = e => root._showToast && root._showToast(e);
     let paints = [];
 
+    // ---- marketplace + inventory views: refresh content when they open
+    let mkBtn = q("#mmMarketBtn"), mkTab = q("#mmMarketTab"), invTabBtn = q("#mmInvTab");
+    mkBtn && mkBtn.addEventListener("click", () => this["renderMarket"]());
+    mkTab && mkTab.addEventListener("click", () => this["renderMarket"]());
+    invTabBtn && invTabBtn.addEventListener("click", () => this["renderLocker"]());
+
     // ---- play: category (matchmaking is a locked placeholder, practice plays)
     let goBtn = q("#mmGoBtn");
     let botDiffWrap = q("#mmBotDiffWrap");
@@ -1875,15 +1881,16 @@ var Nv = class e {
     // in from that point on; /auth/me revalidates it on every menu build.
     this["_authInit"]();
 
-    // ---- marketplace tab: the middle nav button opens the server-backed
-    // economy (3 cases + Universal Key, 10 tokens each, server-side rolls)
+    // ---- marketplace tab: the MARKET nav button opens the server-backed
+    // economy (3 cases + Universal Key, 10 tokens each, server-side rolls).
+    // The decoded menu already ships an empty #tab-market placeholder page -
+    // fill THAT one instead of appending a duplicate (the tab handler always
+    // switches to the first #tab-market match, so a duplicate never shows).
     try {
       let mb = this["menuEl"].querySelector('[data-tab="market"]');
       mb && (mb.textContent = "MARKET");
-      let pg = document.createElement("div");
-      pg.id = "tab-market", pg.className = "tabpage";
-      pg.innerHTML = '<h2 class="pagetitle">MARKETPLACE</h2><div id="mkwrap"></div>';
-      this["menuEl"].appendChild(pg);
+      let pg = this["menuEl"].querySelector("#tab-market");
+      pg && (pg.innerHTML = '<h2 class="pagetitle">MARKETPLACE</h2><div id="mkwrap"></div>');
     } catch {}
 
     // ---- currency rename: the obfuscated string table renders the currency
@@ -2451,16 +2458,26 @@ var Nv = class e {
     panel.querySelector("#apRegister").onclick = post("/auth/register");
     panel.querySelector("#apLogout").onclick = async () => {
       try { await call("/auth/logout", { method: "POST", headers: { Authorization: "Bearer " + getToken() } }) } catch {}
-      setToken(""), this["_inv"] = null, H["__server"] = !0x1, showForm("LOGGED OUT"), this["_syncMenuTokens"]()
+      setToken(""), this["_inv"] = null, H["__server"] = !0x1, showForm("LOGGED OUT"), this["_syncMenuTokens"]();
+      // logging out forces the login gate again - an account is required to play
+      this["_requireAuth"]()
     };
-    // stay logged in: resume an existing session if the token is still valid
-    if (getToken()) {
+    // stay logged in: resume an existing session if the token is still valid.
+    // _authReady resolves once we KNOW the login state - the menu then forces
+    // the login gate immediately if the player is not authenticated.
+    this["_authReady"] = new Promise(res => {
+      if (!getToken()) return res(!0x1);
       call("/auth/me", authed()).then(({ ok, j }) => {
         if (ok && j && j.user) {
-          showIn(j.user), this["_loadInv"]()
-        } else setToken("");
-      })["catch"](() => {})
-    }
+          showIn(j.user), this["_loadInv"]()["then"](() => res(!0x0));
+        } else {
+          setToken(""), res(!0x1);
+        }
+      })["catch"](() => res(!0x1));
+    });
+    this["_authReady"]["then"](ok => {
+      ok || this["_requireAuth"]()
+    });
   } ["_authToken"]() {
     try {
       return localStorage.getItem("clutcher_auth_token") || ""
@@ -2474,6 +2491,7 @@ var Nv = class e {
       .then(r => r.ok ? r.json() : null).then(j => {
         if (j && j.inv) {
           this["_inv"] = j.inv, H["hydrateServer"](j.inv), this["_wireEquipSync"](), this["_syncMenuTokens"]();
+          this["renderMarket"](), this["renderLocker"]();
         }
         return j && j.inv || null
       })["catch"](() => null)
@@ -2515,7 +2533,7 @@ var Nv = class e {
       return
     }
     ov = document.createElement("div");
-    ov.id = "authgate";
+    ov.id = "authgate", ov.className = "show";
     ov.innerHTML = '<div class="ag-box"><div class="ag-head" id="agHead">CREATE YOUR ACCOUNT</div>'
       + '<div class="ag-sub">Playing requires an account. Register with a username and password - no email needed.</div>'
       + '<input id="agUser" maxlength="20" placeholder="Username" autocomplete="off" spellcheck="false">'
@@ -2568,12 +2586,12 @@ var Nv = class e {
         this["_inv"] = j.inv, H["hydrateServer"](j.inv), this["renderMarket"](), this["_syncMenuTokens"](), this["game"]["audio"]["play"]("buy");
       } else {
         this["game"]["audio"]["play"]("denied");
-        let n = this["menuEl"].querySelector("#mknote");
+        let n = document.querySelector("#mmMarketWrap #mknote") || this["menuEl"].querySelector("#mknote");
         n && (n.textContent = j && j.error === "not_enough_tokens" ? "NOT ENOUGH TOKENS" : "PURCHASE FAILED");
       }
     })["catch"](() => {})
   } ["_marketOpenFlow"](crate) {
-    let box = this["menuEl"].querySelector("#mkopen");
+    let box = document.querySelector("#mmMarketWrap #mkopen") || this["menuEl"].querySelector("#mkopen");
     if (!box) return;
     let inv = this["_inv"];
     if (!inv) {
@@ -2622,7 +2640,9 @@ var Nv = class e {
       }
     };
   } ["renderMarket"]() {
-    let w = this["menuEl"].querySelector("#mkwrap");
+    // renders into the visible MARKETPLACE view (menu-root); falls back to the
+    // legacy hidden tab page
+    let w = document.querySelector("#mmMarketWrap") || this["menuEl"].querySelector("#mkwrap");
     if (!w) return;
     let inv = this["_inv"];
     let rows = "";
@@ -2654,6 +2674,41 @@ var Nv = class e {
     w.querySelectorAll(".mk-card[data-crate]").forEach(card => {
       card.onclick = ev => {
         ev.target.closest(".mk-buy") || this["_marketOpenFlow"](card.dataset.crate)
+      }
+    });
+  } ["renderLocker"]() {
+    // INVENTORY tab: renders the owned finishes from the economy view
+    // (server-hydrated when logged in) with equip buttons - equips sync to
+    // the server via the H.save override. Renders into the visible
+    // INVENTORY view (menu-root); falls back to the legacy hidden tab page.
+    let w = document.querySelector("#mmInvWrap") || this["menuEl"].querySelector("#tab-locker");
+    if (!w) return;
+    let d = H["load"]();
+    let items = d["items"] || [];
+    let eqWpn = {};
+    for (let [wd, uid] of Object.entries(d["equipped"] || {})) {
+      let it = H["item"](uid);
+      it && (eqWpn[uid] = wd)
+    }
+    let rows = '<div class="lk-stat">' + (this["_inv"]
+      ? 'TOKENS: <b>' + this["_inv"]["tokens"] + '</b> &middot; UNIVERSAL KEYS: <b>' + this["_inv"]["keys"] + '</b> &middot; CASES: <b>' + Object.values(this["_inv"]["cases"] || {}).reduce((a, b) => a + b, 0) + '</b>'
+      : 'Log in to sync your inventory with the server.') + '</div>';
+    rows += '<div class="lk-grid">';
+    rows += items.length ? items.map(it => {
+      let p = ps[it["skin"]];
+      let wpn = (it["skin"] || "").split("_")[0];
+      let isEq = !!eqWpn[it["uid"]];
+      return '<div class="lk-card' + (isEq ? " eq" : "") + '">'
+        + '<div class="lk-wpn">' + wpn.toUpperCase() + '</div>'
+        + '<div class="lk-name">' + (p && p["name"] || it["skin"]) + '</div>'
+        + '<div class="mk-rid">' + it["skin"] + '</div>'
+        + '<button class="lk-eq" data-uid="' + it["uid"] + '"' + (isEq ? " disabled" : "") + '>' + (isEq ? "EQUIPPED" : "EQUIP") + '</button></div>'
+    }).join("") : '<div class="mk-note">No owned finishes yet - open cases in the MARKET tab.</div>';
+    rows += '</div>';
+    w.innerHTML = rows;
+    w.querySelectorAll(".lk-eq").forEach(b => {
+      b.onclick = () => {
+        H["equip"](b.dataset.uid), H["save"](), this["renderLocker"](), this["game"]["audio"]["play"]("buy")
       }
     });
   } ["showPause"]() {
