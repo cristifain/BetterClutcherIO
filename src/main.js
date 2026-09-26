@@ -28184,9 +28184,7 @@ window["game"] = new class {
         e = matchMedia(__p_KGFS_MAIN_STR(0x1c879, 0x20))["matches"]
       } catch {}
       e && (l = !0x0)
-    }, !0x0), addEventListener("beforeunload", e => {
-      (this["state"] === "playing" || this["state"] === "teamselect") && (e["preventDefault"](), e["returnValue"] = "")
-    }), this["quality"] = this["_bootQuality"];
+    }, !0x0), this["quality"] = this["_bootQuality"];
     let u = (e, t) => {
       try {
         return localStorage["getItem"](e) ?? t
@@ -32088,7 +32086,7 @@ window["game"] = new class {
         }
       } else {
         if (this["respawnAllowed"]) {
-          this["respawnT"] -= t, this["hud"]["showRespawn"](this["respawnT"]), this["respawnT"] <= 0x0 && this["roundActive"] && this["respawnPlayer"]()
+          this["respawnT"] -= t, this["hud"]["showRespawn"](this["respawnT"]), this["respawnT"] <= 0x0 && this["roundActive"] && !this["hud"]["_mmDead"] && this["respawnPlayer"]()
         } else {
           this["respawnT"] -= t;
           let e = this["modeCtl"] && (this["modeCtl"]["state"] === "live" || this["modeCtl"]["state"] === "planted");

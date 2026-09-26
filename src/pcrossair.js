@@ -194,10 +194,7 @@ export function applyCrosshair(hud) {
       ["ch-e", o, -(a / 0x2), i + "px", a + "px"]
     ];
     for (let t of hud["chInner"]) {
-      t["style"]["display"] = c ? "none" : "";
-      if (c) {
-        continue
-      }
+      t["style"]["display"] = "";
       for (let [cn, ox, oy, cw, chh] of l) {
         if (t["classList"]["contains"](cn)) {
           t["style"]["left"] = ox + "px", t["style"]["top"] = oy + "px", t["style"]["width"] = cw, t["style"]["height"] = chh

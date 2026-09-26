@@ -136,6 +136,8 @@ window.__cs2UiScale = function () {
   /* in-game pause: the shell floats over the live game; the loadout page
      (ported from the old menu) fills its view below the 42px header */
   #menu-root.ingame .mm-bg, #menu-root.ingame .mm-bg::before { background: transparent; }
+  /* translucent veil so settings/play text stays readable over the live game */
+  #menu-root.ingame .view.open { background: rgba(8, 11, 15, 0.55); }
   #menu-root #tab-loadout { display: block !important; position: absolute; inset: 42px 0 0 0; }
   /* in-game pause: the main menu floats transparent over the live game */
   #menu.ingame { background: transparent; }

@@ -2339,6 +2339,15 @@ var Nv = class e {
           self["_mmLastHp"] == null && (self["_mmLastHp"] = 100);
           e.hp < self["_mmLastHp"] && self["damageFlash"]();
           self["_mmLastHp"] = e.hp;
+          // server-driven respawn: full hp means the server brought us back
+          if (e.hp >= 100 && self["_mmDead"]) {
+            self["_mmDead"] = !1;
+            if (game["state"] === "playing") {
+              try {
+                game["respawnPlayer"]()
+              } catch {}
+            }
+          }
           return
         }
         let n = remoteRec(e.id);
@@ -2362,6 +2371,16 @@ var Nv = class e {
         let t = self["_mmNet"] && self["_mmNet"]["getMyId"]();
         if (e.id === t) {
           self["_mmLastHp"] = 0;
+          // the server killed us: apply it locally so we actually die here
+          // too (death cam, weapon drop, no more invisible shooting), then
+          // wait for the server's respawn (hp 100) instead of the local timer
+          self["_mmDead"] = !0;
+          if (game["state"] === "playing" && game["player"] && game["player"]["alive"]) {
+            try {
+              game["killEntity"](game["player"], game["player"], null, !0x1)
+            } catch {}
+          }
+          game && (game["respawnT"] = 2.5);
           return
         }
         
