@@ -1,8 +1,4 @@
-// Bot system (NPC bots + AI), split verbatim from main.js (no logic changes).
-// Contains: the agent-attach queue (hh/gh/_h/vh), culling scratch vectors,
-// the bot entity class $h, its AI helpers, and the bot manager Og.
-// Everything engine-side is imported from main.js (circular import is safe:
-// all main.js bindings here are referenced only at runtime, never at module evaluation).
+// Bot system (NPC bots + AI)
 import { B as r, Ht as g, Ot as O, it as ke, mt as Le, nt as ze, rt as I } from "./three-B50Y55N1.js";
 import {
   Ah,

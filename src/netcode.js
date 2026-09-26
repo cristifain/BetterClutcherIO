@@ -1,21 +1,4 @@
-// ============================================================================
-// netcode.js - WebSocket client, matchmaking, state loop, sub-tick timestamps,
-// remote-player interpolation, viewmodel wiring.
-//
-// INTEGRATION - add these 3 lines to main.js (once, after scene/camera exist):
-//   import { initMultiplayer, requestMatch } from "./netcode.js";
-//   initMultiplayer({ getPlayerTransform, applyRemoteUpdate, spawnRemotePlayer,
-//     despawnRemotePlayer, onShot, onHit, onDead, onSelfSpawn, scene, camera });
-//   // Play Online button: requestMatch().then(id => ...) - netcode handles the rest.
-//
-// BOT RULE: online matches are marked isOnline = true (window.__clutcherOnlineMatch
-// is set while connected). Bot spawning logic in the game must check this flag and
-// spawn ZERO bots for online matches.
-//
-// SUB-TICK: every outgoing message carries vt = performance.now(). The server
-// records real timestamps per connection (clock-offset corrected) and rewinds
-// other players to the shooter's vt through a ~1s position history ring buffer.
-// ============================================================================
+// netcode.js - WebSocket client
 
 import {
   WS_BASE,
@@ -29,28 +12,27 @@ import {
 import { validateShot, flagSuspicious } from "./anticheat.js";
 import { initViewModel, updateViewModel, setViewModelVisible, getViewModel } from "./pviewmodel.js";
 
-var opts = null;              // callbacks passed to initMultiplayer
-var ws = null;                // active WebSocket
+var opts = null;             
+var ws = null;                
 var myId = null;
 var connected = !1;
 var roomId = null;
-var onlineMatch = !1;         // true while in a matchmaking (online) match
-var remotes = new Map();      // id -> { x,y,z,ry, tx,ty,tz,try_, hp }
+var onlineMatch = !1;         
+var remotes = new Map();      
 var sendTimer = 0;
 var rafId = 0;
 var lastFrame = 0;
-var pingTimer = 0;            // latency probe interval
-var lastRtt = null;           // last measured round-trip in ms
-var sendCount = 0;            // state messages sent (for one-shot logging)
-var lastSent = null;          // last sent { x,y,z } for client-side validation
+var pingTimer = 0;            
+var lastRtt = null;           
+var sendCount = 0;            
+var lastSent = null;          
 var lastSentT = 0;
-var fullRetries = 0;          // /matchmake retries after { t:"full" }
-var reconnects = 0;           // same-room reconnect attempts after abnormal close
+var fullRetries = 0;          
+var reconnects = 0;           
 var intentionalClose = !1;
-var visHooked = !1;           // visibilitychange listener installed once
+var visHooked = !1;           
 
-// online-session flag: while set, the game's bot spawning logic must spawn
-// ZERO bots (see main.js botMgr.setup guard)
+
 function setOnline(v) {
   onlineMatch = v;
   try {
@@ -74,15 +56,9 @@ export function getLatency() {
   return lastRtt
 }
 
-// ---- matchmaking: ask the worker for a room, then connect automatically ----
-// Rooms are per-map: the matchmaker only hands out rooms running the SAME map,
-// so you can never spawn into a server playing a different map than selected.
+
 var mmMap = "dusker";
 
-// ---- matchmaking over the WebSocket itself: the browser opens
-// /quickmatch/<map>, the worker assigns a room server-side and upgrades into
-// it. No cross-origin fetch is involved (fetch to workers.dev is blocked by
-// some browser configurations), so this works where fetch does not.
 var qmResolve = null;
 var qmReject = null;
 
@@ -195,14 +171,13 @@ function handleMsg(m) {
       try {
         console.log("[net] welcome id=" + myId + " room=" + roomId + " players=" + (m.players || []).length)
       } catch {}
-      // resolve the pending quickmatch promise with the assigned room
+      
       if (qmResolve) {
         let rs = qmResolve;
         qmResolve = qmReject = null;
         rs(roomId)
       }
-      // online-session flag: bot spawning logic in the game checks this and
-      // must spawn ZERO bots while it is set
+      
       onlineMatch = !0;
       try {
         window.__clutcherOnlineMatch = !0
@@ -213,9 +188,7 @@ function handleMsg(m) {
       send({ t: "p", vt: performance.now() });
       clearInterval(pingTimer);
       pingTimer = setInterval(() => send({ t: "p", vt: performance.now() }), 2000);
-      // NOTE: the game's own viewmodel (ic) already renders the local player's
-      // first-person gun - the netcode standby viewmodel stays hidden so the
-      // two can never fight over the camera. Remote players never get one.
+      
       setViewModelVisible(!1);
       try {
         opts.onSelfSpawn({ id: myId, players: m.players || [], roomId })
@@ -293,7 +266,7 @@ function handleMsg(m) {
             opts.spawnRemotePlayer(p.id, { x: p.x || 0, y: p.y || 0, z: p.z || 0, ry: p.ry || 0, hp: p.hp, team: p.team });
           } catch {}
         } else if (isNum(p.hp) && p.hp !== r.hp) {
-          // self-heal a missed death/respawn event
+          
           r.hp = p.hp;
           try { opts.onHp({ id: p.id, hp: p.hp }) } catch {}
         }
@@ -308,7 +281,7 @@ function handleMsg(m) {
       break
     }
     case "full": {
-      // room filled up between matchmake and connect: ask for another room
+      
       intentionalClose = !0;
       try {
         ws.close()
@@ -325,14 +298,10 @@ function handleMsg(m) {
   }
 }
 
-// ---- connection management ----
-// (openSocket / connectQuick / connectRoom above handle all connections)
-
-// ---- 20Hz state send (sub-tick: real client timestamp per update) ----
+// ---- 20Hz state send sub-tick client timestamp per update
 function sendState() {
   if (!isConnected() || !opts.getPlayerTransform) return;
-  // only send while actually in the world: team-select / death positions are
-  // meaningless and would trip the movement validation
+  
   if (opts.canSendState && !opts.canSendState()) {
     lastSent = null;
     return
@@ -340,10 +309,7 @@ function sendState() {
   let t = opts.getPlayerTransform() || {};
   let now = performance.now();
   if (!isNum(t.x) || !isNum(t.y) || !isNum(t.z) || !isNum(t.ry)) return;
-  // NOTE: no client-side move rejection here - performance.now() is coarsened
-  // by browser privacy modes (Firefox fingerprinting protection), making local
-  // dt math unreliable and causing false rejections. The server validates with
-  // its own arrival clock and is the single authority.
+  
   lastSent = { x: t.x, y: t.y, z: t.z }, lastSentT = now;
   if (!sendCount) {
     try { console.log("[net] first state sent", t.x, t.y, t.z) } catch {}
@@ -357,7 +323,7 @@ export function sendShot(ox, oy, oz, dx, dy, dz) {
     flagSuspicious(myId, "bad shot rejected locally");
     return !1
   }
-  // sub-tick: the server rewinds targets to this exact timestamp for hit checks
+  
   send({ t: "sh", ox, oy, oz, dx, dy, dz, vt: performance.now() });
   return !0
 }
@@ -365,9 +331,7 @@ export function sendShot(ox, oy, oz, dx, dy, dz) {
 export function sendHit(targetId, dmg, ray) {
   if (!targetId || !isNum(dmg)) return !1;
   let m = { t: "hit", target: targetId, dmg: clamp(dmg, 0, 100), vt: performance.now() };
-  // melee hits (knife/taser) carry their own swing ray: there is no "sh"
-  // message to reference, so the server validates against this ray at close
-  // range instead (see MatchRoom's "hit" handler)
+  
   if (ray && isNum(ray.ox) && isNum(ray.oy) && isNum(ray.oz) && isNum(ray.dx) && isNum(ray.dy) && isNum(ray.dz)) {
     m.ox = ray.ox, m.oy = ray.oy, m.oz = ray.oz, m.dx = ray.dx, m.dy = ray.dy, m.dz = ray.dz
   }
@@ -375,7 +339,6 @@ export function sendHit(targetId, dmg, ray) {
   return !0
 }
 
-// ---- per-frame: remote interpolation + viewmodel ----
 function frame(now) {
   rafId = requestAnimationFrame(frame);
   let dt = lastFrame ? Math.min(.1, (now - lastFrame) / 1000) : .016;
@@ -399,7 +362,7 @@ function frame(now) {
       opts.applyRemoteUpdate(rid, { x: r.x, y: r.y, z: r.z, ry: r.ry, hp: r.hp, team: r.team, kills: r.kills || 0 })
     } catch {}
   }
-  // viewmodel: bob/sway/recoil from the local player's transform rate
+  
   let st = {};
   if (opts.getPlayerTransform) {
     let p = opts.getPlayerTransform() || {};
@@ -429,7 +392,7 @@ function stopLoops() {
   cancelAnimationFrame(rafId), rafId = 0;
 }
 
-// leave the online session entirely (menu opened / quit): drops remotes,
+
 // closes the socket, clears the online flag so practice bots work again
 export function disconnectOnline() {
   intentionalClose = !0;

@@ -1,5 +1,5 @@
-// Case definitions (42 crates: id, name, price, contents, odds) extracted from data-BdgATJBp.js.
-// Re-imported and re-exported as `c` by data-BdgATJBp.js, so main.js is unaffected.
+// Case definitions (42 crates: id, name, price, contents, odds) extracted from data.js
+
 export const cases = [{
     id: `crate_valve_1`,
     name: `Arms Deal Case`,

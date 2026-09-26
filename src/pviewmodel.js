@@ -1,8 +1,4 @@
-// Player viewmodel (first-person weapon/arms rendering), split verbatim from main.js (no logic changes).
-// Contains: procedural weapon model builders (Qs/nc and the G/K/Zs/... primitive helpers),
-// the recoil table rc, and the viewmodel class ic (setWeapon/setHand/update/kick/reload/...).
-// Engine-side bindings are imported from main.js (circular import is safe: all main.js
-// bindings are referenced only at runtime, never during module evaluation).
+// Player viewmodel (first-person weapon/arms rendering), 
 import { Pt as A, Nt as E, h as Ee, _t as F, rt as I, mt as Le, k as Me, kt as Ne, T as P, pt as Ue, q as We, F as d, R as ee, w as et, Ht as g, H as h, it as ke, E as l, x as nt, Ct as o, Vt as oe, xt as rt, D as s, W as se, A as t, Et as u, ct as ve } from "./three-B50Y55N1.js";
 import {
   H,

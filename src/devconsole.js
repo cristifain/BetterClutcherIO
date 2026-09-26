@@ -1,8 +1,5 @@
 // Dev console.
-// Off by default. Enable it once in Settings -> "Dev-Console" (persisted in
-// localStorage); after that ` (backquote) toggles a draggable CS:GO-style
-// console anywhere in the page.
-// Commands: remove_bots, fly, xh.
+
 
 import { getXhair, setXhair, resetXhair, XH_KEYS } from "./pcrossair.js";
 
@@ -31,7 +28,7 @@ function writeEnabled(v) {
   } catch {}
 }
 
-// ---------------------------------------------------------------- settings row
+
 
 function syncSettingsRow() {
   const qrow = document.getElementById("opt-devconsole");

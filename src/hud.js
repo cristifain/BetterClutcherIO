@@ -1,9 +1,5 @@
-// HUD (in-game interface), split verbatim from main.js (no logic changes).
-// Contains the Nv HUD class: crosshair mount (via pcrossair.js - the crosshair
-// system itself stays fully independent in pcrossair.js), hitmarker, scope
-// overlay, radar, killfeed, buy menu, pause/settings menus, scoreboard, cases UI.
-// Engine-side bindings are imported from main.js (circular import is safe: all
-// main.js bindings are referenced only at runtime, never during module evaluation).
+// HUD (in-game interface)
+
 import { a as ct, n as ft, s as ht, t as gt } from "./data-BdgATJBp.js";
 import { applySniperWidth, buildCrosshair, updateCrosshair, xhairHitEnabled } from "./pcrossair.js";
 import { A as t, A as mmCyl, H as mmGroup, Ht as mmVec, it as mmBasic, kt as mmSphere, rt as mmMesh, ct as mmStdMat } from "./three-B50Y55N1.js";
@@ -2006,7 +2002,7 @@ var Nv = class e {
       Number.isFinite(e) && (store("clutcher_zoomsens", String(e)), zoomVal.textContent = e.toFixed(zoomPrec), game.zoomSensRatio = e)
     }), paints.push(paintSens, paintZoom);
 
-    // ---- settings: master volume
+    // master volume
     let vol = q("#mmVol"), volVal = q("#mmVolVal");
     let paintVol = () => {
       let e = parseFloat(read("clutcher_vol", "1"));
@@ -2020,7 +2016,7 @@ var Nv = class e {
       } catch {}
     }), paints.push(paintVol);
 
-    // ---- settings: dev console (persisted; read again on next page load)
+    // dev con
     let devEl = q("#mmDevConsole");
     let paintDev = () => {
       devEl.textContent = read("clutcher_devconsole", "0") === "1" ? "YES" : "NO"
@@ -2131,13 +2127,6 @@ var Nv = class e {
       } catch {}
     };
 
-    // ---- remote bodies: real CS2 character agents, one per remote player ----
-    // Reuses the bot body pipeline (see bots.js): Nm loads a rigged model with
-    // locomotion (Ja(): CT -> ctm_sas.glb, T -> tm_phoenix.glb), wm/Tm are the
-    // per-team agent pool, and dead bodies are handed to the game's corpse
-    // manager exactly like bot corpses. Team is swapped by pooling the old
-    // model and fetching the other team's. Unknown team (not picked yet / DM)
-    // shows the T model as a placeholder and swaps when the team arrives.
 
     function effTeam(e) {
       return e === "CT" ? "CT" : "T"
@@ -2171,7 +2160,7 @@ var Nv = class e {
       let i = r ? Promise.resolve(r) : new Nm(game["renderer"])["load"](n);
       i.then(r => {
         t.loading = false;
-        // stale while loading: remote left, switched team, died or got a body
+        
         if (!bodies.has(e) || effTeam(t.team) !== n || t.agent || t.dying) {
           try { Tm(n, r) } catch {}
           return
@@ -2365,7 +2354,7 @@ var Nv = class e {
           self["_mmLastHp"] = 0;
           return
         }
-        // online kill: the server saw this death - award the killer's tokens
+        
         if (e.killer && e.killer === t) self["_awardKill"](!0x0);
         let n = remoteRec(e.id);
         n.alive = false;
@@ -2376,14 +2365,13 @@ var Nv = class e {
         startRemoteDeath(n)
       },
       onSelfSpawn: s => {
-        // late joiner: adopt the room's elapsed time so the match clock matches
-        // what everyone else sees instead of restarting at 10:00
+
         try {
           if (typeof s.age == "number" && s.age > 0 && game["roundTimeLeft"] != null) {
             game["roundTimeLeft"] = Math.max(30, 600 - Math.floor(s.age / 1000))
           }
         } catch {}
-        // joined an online server: show server ID + live latency for 3 seconds
+        
         try {
           let el = document.getElementById("mm-joininfo");
           if (!el) {
@@ -2405,8 +2393,7 @@ var Nv = class e {
         } catch {}
       }
     });
-    // local gun shots: relay to the server (sub-tick) and raycast the remote
-    // bodies for hit detection -> sendHit (server rewinds + validates)
+
     self["_mmReattach"] = () => {
       for (let e of markers.values()) {
         e && e.parent !== game["scene"] && game["scene"]["add"](e)
@@ -2434,13 +2421,7 @@ var Nv = class e {
       }
       r && t.sendHit(r, e && e.dmg || 25)
     });
-    // knife/taser melee bridge: the local melee (game.playerMelee -> meleeAttack)
-    // only raycasts game entities (bots), so online remotes are hit through this
-    // bridge instead - same aim cone (.55 dot), reach (def.range + .4), line-of-
-    // sight and backstab rules as the local melee, enemies only. The server
-    // validates the swing ray as a short-range self-contained hit (same rewind,
-    // team and rate rules as gun shots); dmg comes from the game's KNIFE_DMG
-    // table (slash 40 / back 90 / stab 65 / backstab 180, zeus 500).
+
     if (!game["_mmMeleeHooked"]) {
       game["_mmMeleeHooked"] = true;
       let origMelee = game["playerMelee"];
@@ -2549,9 +2530,7 @@ var Nv = class e {
       // logging out forces the login gate again - an account is required to play
       this["_requireAuth"]()
     };
-    // stay logged in: resume an existing session if the token is still valid.
-    // _authReady resolves once we KNOW the login state - the menu then forces
-    // the login gate immediately if the player is not authenticated.
+
     this["_authReady"] = new Promise(res => {
       if (!getToken()) return res(!0x1);
       call("/auth/me", authed()).then(({ ok, j }) => {
@@ -2694,9 +2673,7 @@ var Nv = class e {
       }
     })["catch"](() => {})
   } ["caseOpenServer"](crate) {
-    // THE case open path: the roll happens on the SERVER first (the client
-    // never picks the reward), then the ORIGINAL case animation plays with
-    // the server-decided reward. Cases are opened from the INVENTORY view.
+
     let toast = m => this["_mmRoot"] && this["_mmRoot"]["_showToast"] && this["_mmRoot"]["_showToast"](m);
     this["_marketApi"]("/api/case/open", { crate }).then(({ ok, j }) => {
       if (!ok || !j || !j.inv) {
@@ -2758,8 +2735,7 @@ var Nv = class e {
       }
     });
   } ["renderLocker"]() {
-    // INVENTORY view: cards only - owned cases with OPEN, owned skins/knives
-    // with their artwork icon and EQUIP
+
     let w = document.querySelector("#mmInvWrap") || this["menuEl"].querySelector("#tab-locker");
     if (!w) return;
     let inv = this["_inv"];

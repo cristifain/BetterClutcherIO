@@ -1,23 +1,4 @@
-// Player crosshair HUD, split out of main.js (no logic changes).
-// - buildCrosshair creates the #crosshair DOM (4 .chline arms + 4 .chout outer arms)
-//   inside the HUD root and stores chEl/chInner/chOut on the HUD instance.
-// - updateCrosshair is the per-frame crosshair drive (spread, hide/show, recoil follow),
-//   moved verbatim from the HUD class method `updateCrosshair()` with `this` passed as `hud`.
-// Both were decoded from main.js's obfuscated string table:
-//   "chline ch-", "chout cho-", ".chline", "translate(0px,", "translate(", "px,0px)".
-//
-// Custom crosshair config (ported from the newer clutcher.io build):
-// - persistent config in localStorage "clutcher_xhair" (same keys as the original:
-//   style/dot/len/thick/gap/outline/outw/color/r/g/b/alpha/t/sniper/hit/snipehide)
-// - applyCrosshair styles the arms (len/thick/gap/outline/color/alpha) like the
-//   original's applyCrosshair; defaults reproduce the built-in CSS look 1:1
-//   (default: thick 2, len 6, gap 3, green #3cff5a, outline 1px, sniper width 2)
-// - style 0 = dynamic (built-in spread-reactive .chout layer visible),
-//   style 1 = classic static (.chout layer hidden)
-// - applySniperWidth sizes the scope lines (config "sniper", default 2 = CSS width)
-// - snipehide hides the crosshair while holding an unscoped sniper (config "snipehide")
-// - xhairHitEnabled() gates the hitmarker (config "hit", default on)
-// - console command "xh" (devconsole.js) + window.BetterClutcherXhair API
+// Player crosshair ,HUD
 
 export function buildCrosshair(Z, hudRoot, hud) {
   let t = Z("div", "crosshair", hudRoot);
