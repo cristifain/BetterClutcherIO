@@ -800,9 +800,9 @@ var Nv = class e {
     let f = a["length"] ? __p_KGFS_MAIN_STR(0x13c05, 0xaf) + a["length"] + __p_KGFS_MAIN_STR(0x13cb9, 0x36) + a["map"](e => {
       return t(e)
     })["join"]("") + __p_KGFS_MAIN_STR(0x13bea, 0x18) : "";
-    this["menuEl"]["querySelector"](__p_KGFS_MAIN_STR(0x13cf3, 0xd))["innerHTML"] = __p_KGFS_MAIN_STR(0x13d01, 0x34) + e["name"] + __p_KGFS_MAIN_STR(0x13d3a, 0x27) + e["items"]["length"] + __p_KGFS_MAIN_STR(0x13d66, 0x18) + i + d + f + __p_KGFS_MAIN_STR(0x13d84, 0x10), this["menuEl"]["querySelector"](__p_KGFS_MAIN_STR(0x13d9b, 0xb))["style"]["display"] = "flex", this["game"]["audio"]["play"]("uiclick")
+    this["menuEl"]["querySelector"](__p_KGFS_MAIN_STR(0x13cf3, 0xd))["innerHTML"] = __p_KGFS_MAIN_STR(0x13d01, 0x34) + e["name"] + __p_KGFS_MAIN_STR(0x13d3a, 0x27) + e["items"]["length"] + __p_KGFS_MAIN_STR(0x13d66, 0x18) + i + d + f + __p_KGFS_MAIN_STR(0x13d84, 0x10), this["menuEl"]["querySelector"](__p_KGFS_MAIN_STR(0x13d9b, 0xb))["style"]["display"] = "flex", this["menuEl"]["classList"]["add"]("casemode"), this["game"]["audio"]["play"]("uiclick")
   } ["closeCaseInfo"]() {
-    this["menuEl"]["querySelector"](__p_KGFS_MAIN_STR(0x13d9b, 0xb))["style"]["display"] = "none"
+    this["menuEl"]["querySelector"](__p_KGFS_MAIN_STR(0x13d9b, 0xb))["style"]["display"] = "none", this["menuEl"]["classList"]["remove"]("casemode")
   } ["openCaseFlow"](e, t) {
     function __p_AmUw_STR_73_decode(str) {
       var table = "igm/e:HX@Ro~JY4\"y_hB$z.Pj(]I?l2>p%0qa^6Fb[tvA*3EQ&k+sx98O5#}MZ`TL;=Cr,7n{GwuWScN)V!f1dUD<K|";
@@ -1282,7 +1282,7 @@ var Nv = class e {
     }
     this["_cinfFrom"] = !0x1;
     let e = this["menuEl"]["querySelector"](__p_KGFS_MAIN_STR(0x13d9b, 0xb));
-    e && (e["style"]["display"] = "flex")
+    e && (e["style"]["display"] = "flex", this["menuEl"]["classList"]["add"]("casemode"))
   } ["showInspect"](e, t, n, r, i = !0x1) {
     this["closeInspect"](!0x1), i && (this["_cinfFrom"] = !0x0), this["game"]["showSkinViewer"](e, t, {
       ["gloveTeam"]: n,
@@ -1706,7 +1706,7 @@ var Nv = class e {
         } catch {}
       }
     }
-    this["setPlayLoading"](!0x1), this["_syncSettingsRows"](), this["_hwNotice"](), this["_lockNotice"](), this["_syncFsBtn"] && this["_syncFsBtn"](), this["pauseEl"]["style"]["display"] = "none", this["buyEl"]["style"]["display"] = "none", this["root"]["classList"]["add"]("inmenu"), document["body"]["classList"]["add"]("menuopen"), this["escPauseOpen"] = !0x1, this["menuEl"]["classList"]["remove"]("ingame"), this["_mmRoot"] && this["_mmRoot"]["classList"]["remove"]("ingame"), this["_leaveBtn"] && (this["_leaveBtn"]["style"]["display"] = "none"), this["refreshMenuChrome"](), this["renderBinds"]();
+    this["setPlayLoading"](!0x1), this["_syncSettingsRows"](), this["_hwNotice"](), this["_lockNotice"](), this["_syncFsBtn"] && this["_syncFsBtn"](), this["pauseEl"]["style"]["display"] = "none", this["buyEl"]["style"]["display"] = "none", this["root"]["classList"]["add"]("inmenu"), document["body"]["classList"]["add"]("menuopen"), this["escPauseOpen"] = !0x1, this["menuEl"]["classList"]["remove"]("ingame"), this["_mmRoot"] && this["_mmRoot"]["classList"]["remove"]("ingame"), this["_mmPlayOrig"] && this["_mmRoot"] && (this["_mmRoot"]["_openPlay"] = this["_mmPlayOrig"]), this["_leaveBtn"] && (this["_leaveBtn"]["style"]["display"] = "none"), this["refreshMenuChrome"](), this["renderBinds"]();
     let e = this["menuEl"]["querySelector"](__p_KGFS_MAIN_STR(0x16016, 0xf));
     if (e) {
       for (let t of e["children"]) {
@@ -2840,7 +2840,17 @@ var Nv = class e {
     let m = this["_mmRoot"];
     if (m) {
       m["classList"]["add"]("open", "ingame");
-      m["_openPlay"] && m["_openPlay"]();
+      // while paused, the PLAY tab resumes the match instead of opening the
+      // play-configuration view (the GO button resumes via the startGame
+      // intercept either way)
+      this["_mmPlayOrig"] = this["_mmPlayOrig"] || m["_openPlay"];
+      m["_openPlay"] = () => {
+        if (this["game"]["state"] !== "playing") {
+          return this["_mmPlayOrig"] && this["_mmPlayOrig"]()
+        }
+        this["hidePause"](), this["game"]["resume"](!0x0)
+      };
+      m._showHome && m._showHome();
       if (!this["_mmWired"]) {
         this["_mmWired"] = !0x0;
         try {
@@ -2854,6 +2864,10 @@ var Nv = class e {
     }, document["body"]["appendChild"](this["_leaveBtn"]));
     this["_leaveBtn"]["style"]["display"] = "block"
   } ["hidePause"]() {
+    // stamp a grace window: the pointer re-lock after ESC can be rejected by
+    // the browser (ESC cooldown), and the lock-lost handlers must not
+    // instantly re-open the pause menu during that attempt
+    this["_resumeGrace"] = performance["now"]();
     this["pauseEl"]["style"]["display"] = "none", this["pauseOpen"] = !0x1, this["closeHowTo"]();
     this["escPauseOpen"] && (this["escPauseOpen"] = !0x1, this["_mmRoot"] && this["_mmRoot"]["classList"]["remove"]("open", "ingame"), this["root"]["classList"]["remove"]("inmenu"), document["body"]["classList"]["remove"]("menuopen"), this["_leaveBtn"] && (this["_leaveBtn"]["style"]["display"] = "none"))
   } ["keyName"](e) {

@@ -28137,7 +28137,7 @@ window["game"] = new class {
           this["hud"]["hidePause"](), this["audio"]["resume"]()
         } else {
           let e = this["input"]["intentionalUnlockT"] && performance["now"]() - this["input"]["intentionalUnlockT"] < 0x258;
-          !this["hud"]["buyOpen"] && !this["hud"]["pauseMode"] && !e && this["hud"]["showPause"]()
+          !this["hud"]["buyOpen"] && !this["hud"]["pauseMode"] && !this["hud"]["escPauseOpen"] && !(this["hud"]["_resumeGrace"] && performance["now"]() - this["hud"]["_resumeGrace"] < 2500) && !e && this["hud"]["showPause"]()
         }
       }
     }, addEventListener("resize", () => {
@@ -29276,7 +29276,7 @@ window["game"] = new class {
       }, "knife", null), this["hud"]["hideDeath"]()
     } catch {}
     this["_prog"] && this["_prog"](0x1, "READY"), this["_joining"] = !0x1, this["_slowFrames"] = this["_fastFrames"] = 0x0, this["input"]["swallowLook"](0x3), this["weapons"]["clearViewPunch"](), this["effects"]["clearShake"] && this["effects"]["clearShake"](), this["_revealAt"] = this["renderer"]["info"]["render"]["frame"] + 0x5, this["_revealBy"] = performance["now"]() + 0x190, this["_startRestWarm"](), this["input"]["requestLock"](), setTimeout(() => {
-      this["state"] === "playing" && !this["input"]["locked"] && !this["input"]["touchMode"] && !this["hud"]["buyOpen"] && !this["hud"]["pauseMode"] && this["hud"]["showPause"]()
+      this["state"] === "playing" && !this["input"]["locked"] && !this["input"]["touchMode"] && !this["hud"]["buyOpen"] && !this["hud"]["pauseMode"] && !this["hud"]["escPauseOpen"] && !(this["hud"]["_resumeGrace"] && performance["now"]() - this["hud"]["_resumeGrace"] < 2500) && this["hud"]["showPause"]()
     }, 0x2bc), this["ambient"] = this["audio"]["play"](this["map"] && this["map"]["ambient"] || "wind_loop", {
       ["loop"]: !0x0
     })
@@ -31986,7 +31986,7 @@ window["game"] = new class {
       }
       if (this["input"]["wasPressed"]("Escape") && (!this["input"]["locked"] || this["input"]["_emulated"])) {
         let e = this["hud"]["pauseMode"] && this["hud"]["menuEl"]["querySelector"](__p_KGFS_MAIN_STR(0x13de1, 0xb));
-        e && e["style"]["display"] !== "none" ? this["hud"]["closeCase"]() : this["hud"]["pauseMode"] ? this["hud"]["closePauseMenu"]() : this["hud"]["buyOpen"] ? this["hud"]["buyBack"]() || this["hud"]["closeBuy"]() : this["hud"]["howToOpen"] ? this["hud"]["closeHowTo"]() : this["hud"]["escPauseOpen"] ? this["resume"](!0x1) : (this["input"]["unlock"](), this["hud"]["showPause"]())
+        e && e["style"]["display"] !== "none" ? this["hud"]["closeCase"]() : this["hud"]["pauseMode"] ? this["hud"]["closePauseMenu"]() : this["hud"]["buyOpen"] ? this["hud"]["buyBack"]() || this["hud"]["closeBuy"]() : this["hud"]["howToOpen"] ? this["hud"]["closeHowTo"]() : this["hud"]["escPauseOpen"] ? (this["hud"]["hidePause"](), this["resume"](!0x1)) : (this["input"]["unlock"](), this["hud"]["showPause"]())
       }
       if (this["input"]["wasPressedA"]("cases") && !this["hud"]["pauseMode"] && (this["input"]["unlock"](), setTimeout(() => {
           // the old cases tab is retired: the new menu's store view covers it

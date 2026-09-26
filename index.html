@@ -121,8 +121,13 @@ window.__cs2UiScale = function () {
     font-weight: 800; letter-spacing: 2px; font-size: 13px; cursor: pointer; display: none;
     box-shadow: 0 6px 22px rgba(0,0,0,0.5); }
   #pause-back:hover, #pause-leave:hover { filter: brightness(1.1); }
-  /* retired old menus: the #menu-root shell is the only menu now */
-  #menu, #pause { display: none !important; }
+  /* retired old menus: the #menu-root shell is the only menu now.
+     Exception: the case-opening animation and case-info overlays live inside
+     #menu - in "casemode" the old menu is completely emptied (transparent,
+     every child hidden except #caseopen), so no old-menu UI ever shows. */
+  #menu:not(.casemode), #pause { display: none !important; }
+  #menu.casemode { display: block !important; z-index: 300; background: transparent; }
+  #menu.casemode > *:not(#caseopen) { display: none !important; }
   /* in-game pause: the shell floats over the live game; the loadout page
      (ported from the old menu) fills its view below the 42px header */
   #menu-root.ingame .mm-bg, #menu-root.ingame .mm-bg::before { background: transparent; }
