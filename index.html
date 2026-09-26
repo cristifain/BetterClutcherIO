@@ -838,6 +838,34 @@ window.__cs2UiScale = function () {
     padding: 0 26px; border-right: none; white-space: nowrap; }
   #menu-root #mmTokens i { width: 18px; height: 18px; font-size: 11.5px; margin-left: 4px; vertical-align: -3px; }
 
+  /* profile square: options dropdown + logout confirm */
+  #mmUserMenu { position: fixed; display: none; flex-direction: column; min-width: 140px; z-index: 940;
+    background: rgba(13,17,22,0.97); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; padding: 4px; }
+  #mmUserMenu.show { display: flex; }
+  #mmUserMenu .umu-item { padding: 9px 12px; color: #d8dde3; font-size: 12.5px; letter-spacing: 1px;
+    cursor: pointer; border-radius: 4px; }
+  #mmUserMenu .umu-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+  #mmConfirm { position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.6); z-index: 950; font-family: 'Stratum2', 'Stratum2 TF', sans-serif; }
+  #mmConfirm.show { display: flex; }
+  #mmConfirm .mmc-box { width: 360px; padding: 22px 24px; border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 8px; background: rgba(13,17,22,0.97); color: #fff; }
+  #mmConfirm .mmc-text { font-size: 13px; line-height: 1.5; color: #c9d3dd; margin-bottom: 16px; }
+  #mmConfirm .mmc-row { display: flex; gap: 10px; }
+  #mmConfirm .mmc-row button { flex: 1; padding: 9px 0; border-radius: 4px; cursor: pointer; font: inherit;
+    font-family: 'Stratum2 Bold TF', 'Stratum2'; font-size: 12.5px; letter-spacing: 1px; }
+  #mmConfirm #mmcYes { background: #b0342e; border: 0; color: #fff; }
+  #mmConfirm #mmcYes:hover { background: #d14037; }
+  #mmConfirm #mmcNo { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.16); color: #fff; }
+  #mmConfirm #mmcNo:hover { background: rgba(255,255,255,0.16); }
+
+  /* first-time marketplace hint under the market button */
+  #mkhint { position: fixed; display: none; z-index: 95; max-width: 260px; padding: 10px 14px;
+    background: rgba(226,196,106,0.95); color: #14181d; font-size: 12px; line-height: 1.45;
+    border-radius: 6px; white-space: pre-line; cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.4); font-family: 'Stratum2', 'Stratum2 TF', sans-serif; }
+  #mkhint.show { display: block; }
+
   /* account panel: username + password (+ confirm) register/login; the
      currency is "Tokens" (the renamed Coins) */
   #authpanel { margin-top: 10px; padding: 12px 14px; border: 1px solid rgba(255,255,255,0.08); border-radius: 6px;
@@ -1677,7 +1705,7 @@ window.__cs2UiScale = function () {
         <div class="nav-tab mm-soon">NEWS</div>
         <span id="mmTokens"></span>
       </div>
-      <div class="topbar-right"><div class="user-btn" title="Profile"><span class="user-square"></span></div></div>
+      <div class="topbar-right"><div class="user-btn" id="mmUserBtn" title="Profile"><span class="user-square"></span></div></div>
     </div>
 
     <div class="main-content">

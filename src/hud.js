@@ -1751,9 +1751,76 @@ var Nv = class e {
 
     // ---- marketplace + inventory views: refresh content when they open
     let mkBtn = q("#mmMarketBtn"), mkTab = q("#mmMarketTab"), invTabBtn = q("#mmInvTab");
-    mkBtn && mkBtn.addEventListener("click", () => this["renderMarket"]());
-    mkTab && mkTab.addEventListener("click", () => this["renderMarket"]());
+    mkBtn && mkBtn.addEventListener("click", () => {
+      this["_dismissMkHint"](), this["renderMarket"]()
+    });
+    mkTab && mkTab.addEventListener("click", () => {
+      this["_dismissMkHint"](), this["renderMarket"]()
+    });
     invTabBtn && invTabBtn.addEventListener("click", () => this["renderLocker"]());
+
+    // ---- profile square (top right): options -> Log out with confirmation.
+    // Confirming disconnects from any match FIRST, then logs the account out
+    // and forces the login gate back up.
+    let userBtn = q("#mmUserBtn");
+    if (userBtn && !document.getElementById("mmUserMenu")) {
+      let um = document.createElement("div");
+      um.id = "mmUserMenu";
+      um.innerHTML = '<div class="umu-item" id="umuLogout">Log out</div>';
+      document.body.appendChild(um);
+      userBtn.addEventListener("click", e => {
+        e.stopPropagation();
+        let rr = userBtn.getBoundingClientRect();
+        um.style.top = rr.bottom + 8 + "px";
+        um.style.right = Math.max(8, innerWidth - rr.right) + "px";
+        um.classList.toggle("show");
+      });
+      document.addEventListener("click", e => {
+        if (!um.contains(e.target) && !userBtn.contains(e.target)) um.classList.remove("show");
+      });
+      let cm = null;
+      um.querySelector("#umuLogout").onclick = () => {
+        um.classList.remove("show");
+        if (!cm) {
+          cm = document.createElement("div");
+          cm.id = "mmConfirm";
+          cm.innerHTML = '<div class="mmc-box"><div class="mmc-text" id="mmcText"></div>'
+            + '<div class="mmc-row"><button id="mmcYes" type="button">Yes i am sure</button>'
+            + '<button id="mmcNo" type="button">No take me back!</button></div></div>';
+          document.body.appendChild(cm);
+          cm.querySelector("#mmcNo").onclick = () => cm.classList.remove("show");
+        }
+        cm.querySelector("#mmcText").textContent = "Are you sure you want to log out of the current account ("
+          + (this["_inv"] && this["_inv"]["username"] || this["playerName"]())
+          + ") you are logged into? it also disconnects you from the game";
+        cm.classList.add("show");
+        cm.querySelector("#mmcYes").onclick = () => {
+          cm.classList.remove("show");
+          // 1. leave any match first (practice or online)
+          try {
+            if (game.state === "playing" || game.state === "teamselect") game.toMenu();
+          } catch {}
+          try {
+            this["_mmNet"] && this["_mmNet"]["isConnected"] && this["_mmNet"]["isConnected"]() && this["_mmNet"]["disconnectOnline"]();
+          } catch {}
+          // 2. revoke the session and clear the browser token
+          try {
+            fetch(WS_BASE.replace("wss://", "https://") + "/auth/logout", {
+              method: "POST", headers: { Authorization: "Bearer " + (localStorage.getItem("clutcher_auth_token") || "") }
+            })["catch"](() => {});
+          } catch {}
+          try { localStorage.removeItem("clutcher_auth_token") } catch {}
+          this["_inv"] = null, H["__server"] = !0x1;
+          let ap = document.getElementById("authpanel");
+          ap && ap.classList.remove("in");
+          let aps = document.getElementById("apStatus");
+          aps && (aps.textContent = "LOGGED OUT");
+          this["_syncMenuTokens"]();
+          // 3. the login gate comes back
+          this["_requireAuth"]();
+        };
+      };
+    }
 
     // ---- play: category (matchmaking is a locked placeholder, practice plays)
     let goBtn = q("#mmGoBtn");
@@ -2511,7 +2578,7 @@ var Nv = class e {
       .then(r => r.ok ? r.json() : null).then(j => {
         if (j && j.inv) {
           this["_inv"] = j.inv, H["hydrateServer"](j.inv), this["_wireEquipSync"](), this["_syncMenuTokens"]();
-          this["renderMarket"](), this["renderLocker"]();
+          this["renderMarket"](), this["renderLocker"](), this["_maybeShowMkHint"]();
         }
         return j && j.inv || null
       })["catch"](() => null)
@@ -2743,6 +2810,31 @@ var Nv = class e {
         this["_inv"] = j.inv, this["_syncMenuTokens"]();
       }
     })["catch"](() => {})
+  } ["_maybeShowMkHint"]() {
+    // first-join hint under the marketplace button (per browser, localStorage
+    // flag); disappears when clicked or when the marketplace button is used
+    try {
+      if (localStorage.getItem("clutcher_mkseen")) return;
+      if (!this["_inv"]) return;
+      let btn = document.getElementById("mmMarketBtn");
+      if (!btn) return;
+      let h = document.getElementById("mkhint");
+      if (!h) {
+        h = document.createElement("div");
+        h.id = "mkhint";
+        h.textContent = "Marketplace\n-----------\nThe place to buy cases or keys or player sold items.";
+        document.body.appendChild(h);
+        h.onclick = () => this["_dismissMkHint"]();
+      }
+      let rr = btn.getBoundingClientRect();
+      h.style.left = Math.max(8, rr.left) + "px";
+      h.style.top = rr.bottom + 8 + "px";
+      h.classList.add("show");
+    } catch {}
+  } ["_dismissMkHint"]() {
+    try { localStorage.setItem("clutcher_mkseen", "1") } catch {}
+    let h = document.getElementById("mkhint");
+    h && h.remove();
   } ["showPause"]() {
     this["buyOpen"] || (this["_renderPauseKeys"](), this["_lockNotice"](), this["pauseEl"]["style"]["display"] = "flex", this["pauseOpen"] = !0x0)
   } ["hidePause"]() {

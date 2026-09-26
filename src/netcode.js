@@ -280,6 +280,24 @@ function handleMsg(m) {
       } catch {}
       break
     }
+    case "players": {
+      // authoritative snapshot (every ~5s): reconcile - spawn anything the
+      // client is missing (e.g. a lost "join" event) and refresh teams
+      if (!connected || !m.list) break;
+      for (let p of m.list) {
+        if (p.id == null || p.id === myId) continue;
+        let r = remotes.get(p.id);
+        if (!r) {
+          remotes.set(p.id, { id: p.id, x: p.x || 0, y: p.y || 0, z: p.z || 0, ry: p.ry || 0, tx: p.x || 0, ty: p.y || 0, tz: p.z || 0, ttry: p.ry || 0, hp: 100, team: p.team });
+          try {
+            opts.spawnRemotePlayer(p.id, { x: p.x || 0, y: p.y || 0, z: p.z || 0, ry: p.ry || 0, hp: 100, team: p.team });
+          } catch {}
+        } else if (p.team && r.team !== p.team) {
+          r.team = p.team;
+        }
+      }
+      break
+    }
     case "p2": {
       if (isNum(m.vt)) lastRtt = Math.max(0, Math.round(performance.now() - m.vt));
       break
