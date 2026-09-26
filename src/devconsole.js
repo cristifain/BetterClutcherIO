@@ -2,6 +2,7 @@
 
 
 import { getXhair, setXhair, resetXhair, XH_KEYS } from "./pcrossair.js";
+import { getVmSettings, setVmSetting, applyVmSettings } from "./pviewmodel.js";
 
 const LS_KEY = "clutcher_devconsole";
 
@@ -346,9 +347,56 @@ function runCommand(raw) {
       else print("xh: bad key or value. Keys: " + XH_KEYS.join(", "), "err");
       break;
     }
+    case "viewmodel_fov":
+    case "viewmodel_offset_x":
+    case "viewmodel_offset_y":
+    case "viewmodel_offset_z":
+    case "cl_righthand":
+    case "cl_rigthand": {
+      // cl_rigthand is accepted as an alias of cl_righthand
+      const vmCmd = {
+        viewmodel_fov: ["fov", 54, 68, 60],
+        viewmodel_offset_x: ["ox", -2, 2.5, 1],
+        viewmodel_offset_y: ["oy", -2, 2, 1],
+        viewmodel_offset_z: ["oz", -2, 2, -1],
+        cl_righthand: ["hand", 0, 1, 1],
+        cl_rigthand: ["hand", 0, 1, 1]
+      }[name];
+      const [k, min, max, def] = vmCmd;
+      const args = cmd.split(/\s+/).slice(1);
+      if (!args.length) {
+        const cur = k === "hand"
+          ? (game && game.handPref === "left" ? 0 : 1)
+          : getVmSettings()[k];
+        print(name + " = " + cur + " (default " + def + ", range " + min + " to " + max + ")", "out");
+        break;
+      }
+      const raw = Number(args[0]);
+      if (k === "hand") {
+        if (raw !== 0 && raw !== 1) {
+          print(name + ": bad value '" + args[0] + "' (1 = right hand, 0 = left hand)", "err");
+          break;
+        }
+        if (!game || !game.setHand) {
+          print(name + ": game not ready.", "err");
+          break;
+        }
+        game.setHand(raw === 0);
+        print(name + " = " + raw + " (saved)", "ok");
+        break;
+      }
+      const applied = setVmSetting(k, raw);
+      if (applied == null) {
+        print(name + ": bad value '" + args[0] + "' (range " + min + " to " + max + ")", "err");
+        break;
+      }
+      applyVmSettings(game);
+      print(name + " = " + applied + " (saved" + (applied !== raw ? ", clamped" : "") + ")", "ok");
+      break;
+    }
     default:
       print("Unknown command: " + name, "err");
-      print("Available commands: remove_bots, fly, xh", "out");
+      print("Available commands: remove_bots, fly, xh, viewmodel_fov, viewmodel_offset_x, viewmodel_offset_y, viewmodel_offset_z, cl_righthand", "out");
   }
 }
 

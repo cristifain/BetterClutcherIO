@@ -2775,12 +2775,20 @@ var Nv = class e {
       }
     });
   } ["_awardKill"](online) {
-    // kill reward, server-side balance: +1 token in practice, +1.5 online
+    // kill/plant/defuse credit. Practice (offline) reports are hard-capped
+    // server-side per account; online kills only pay the 1.5x rate when the
+    // match room confirms it witnessed the kill (roomId+pid proof, consumed
+    // once) - without that proof the tokens do not apply
     let API = WS_BASE.replace("wss://", "https://");
+    let body = { online: !!online };
+    if (online) {
+      body.roomId = (this["_mmNet"] && this["_mmNet"]["getRoomId"] && this["_mmNet"]["getRoomId"]()) || "";
+      body.pid = (this["_mmNet"] && this["_mmNet"]["getMyId"] && this["_mmNet"]["getMyId"]()) || "";
+    }
     fetch(API + "/api/kill", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: "Bearer " + this["_authToken"]() },
-      body: JSON.stringify({ online: !!online })
+      body: JSON.stringify(body)
     }).then(r => r.ok ? r.json() : null).then(j => {
       if (j && j.inv) {
         this["_inv"] = j.inv, this["_syncMenuTokens"]();

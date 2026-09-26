@@ -50,6 +50,10 @@ export function getMyId() {
   return myId
 }
 
+export function getRoomId() {
+  return roomId
+}
+
 export function isOnlineMatch() {
   return onlineMatch
 }
@@ -459,5 +463,5 @@ export function initMultiplayer(o) {
       })
     } catch {}
   }
-  return { requestMatch, sendShot, sendHit, getMyId, isConnected, isOnlineMatch, getViewModel, disconnectOnline, getLatency }
+  return { requestMatch, sendShot, sendHit, getMyId, getRoomId, isConnected, isOnlineMatch, getViewModel, disconnectOnline, getLatency }
 }

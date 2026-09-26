@@ -117,12 +117,12 @@ import { wp } from "./paint-system.js";
 import { buildCrosshair, updateCrosshair, applySniperWidth, xhairHitEnabled } from "./pcrossair.js";
 import { Og, vh, tg } from "./bots.js";
 import { initDevConsole } from "./devconsole.js";
-import { Qs, nc, rc, Ms, ec, ic } from "./pviewmodel.js";
+import { Qs, nc, rc, Ms, ec, ic, Zb, applyVmSettings } from "./pviewmodel.js";
 import { __p_KGFS_MAIN_STR, __p_V5bL_array, __p_nino_bufferToString } from "./decode.js";
 import { Ai, Br, Di, Fr, Ir, Lr, Pr, Rr, ki } from "./audio.js";
 import { Nv } from "./hud.js";
 export { Ah, Ai, Bh, Ca, Da, Dh, Ea, Eh, Fh, Fo, Gh, Hh, Ih, Jh, Lh, Mh, Mt, Nh, Nm, Oh, Ph, Qh, Rh, Rn, Rt, Sa, Ta, Th, Tm, Ua, Uh, V, Vh, Wh, Ym, ah, ca, ch, da, dh, fa, fh, fo, ih, jh, jt, ka, kh, lh, mh, nh, oa, oh, ph, po, qh, rh, sa, sh, ua, uh, wm, z, zh };
-export { H, Ro, Yo, ac, fs };
+export { H, Ro, Yo, ac, fs, Bb, eb, Ia, qf, Yb, Qy, $y, By, Gb, Hb, Ub, Vb, qb, tb, ib, nb, rb, no, ho, co };
 var _t = 0x2;
 var vt = class {
   constructor() {
@@ -24098,7 +24098,7 @@ var H_ = class {
           }
           this["_defusing"] = null, t["audio"]["play"]("defused", {
             ["pos"]: this["planted"]
-          }), this["_announceDefused"](), t["effects"]["bombLightOff"] && t["effects"]["bombLightOff"](), i["money"] = Math["min"](X["maxMoney"], (i["money"] || 0x0) + X["defuseReward"]), i["isPlayer"] && t["hud"]["reward"]("+$" + X["defuseReward"] + __p_KGFS_MAIN_STR(0xd470, 0x9)), this["roundEnd"]("CT", __p_P2tO_STR_61(0xd47d, 0xf));
+          }), this["_announceDefused"](), t["effects"]["bombLightOff"] && t["effects"]["bombLightOff"](), i["money"] = Math["min"](X["maxMoney"], (i["money"] || 0x0) + X["defuseReward"]), i["isPlayer"] && (t["hud"]["reward"]("+1 TOKEN defuse"), t["hud"] && t["hud"]["_awardKill"] && t["hud"]["_awardKill"](!0x1)), this["roundEnd"]("CT", __p_P2tO_STR_61(0xd47d, 0xf));
           return
         }
       } else {
@@ -24110,7 +24110,7 @@ var H_ = class {
     t["viewmodel"]["action"] = this["carrier"] === n && this["plantProgress"] > 0x0 ? "plant" : this["defuser"] === n && this["defuseProgress"] > 0x0 ? "defuse" : null, n["forceCrouch"] = t["viewmodel"]["action"] !== null
   } ["plant"](e, t) {
     let n = this["game"];
-    this["_planting"] = null, this["plantProgress"] = 0x0, this["carrier"] = null, e["money"] = Math["min"](X["maxMoney"], (e["money"] || 0x0) + X["plantReward"]), e["isPlayer"] ? (n["weapons"]["slots"][0x5] = null, n["weapons"]["current"] === "c4" && n["weapons"]["equip"](n["weapons"]["slots"][0x1] || n["weapons"]["slots"][0x2] || "knife"), n["hud"]["reward"]("+$" + X["plantReward"] + __p_KGFS_MAIN_STR(0xd490, 0x8)), n["hud"]["updateWeapon"](), n["hud"]["updateMoney"]()) : e["hasBomb"] = !0x1;
+    this["_planting"] = null, this["plantProgress"] = 0x0, this["carrier"] = null, e["money"] = Math["min"](X["maxMoney"], (e["money"] || 0x0) + X["plantReward"]), e["isPlayer"] ? (n["weapons"]["slots"][0x5] = null, n["weapons"]["current"] === "c4" && n["weapons"]["equip"](n["weapons"]["slots"][0x1] || n["weapons"]["slots"][0x2] || "knife"), n["hud"]["reward"]("+1 TOKEN plant"), n["hud"]["_awardKill"] && n["hud"]["_awardKill"](!0x1), n["hud"]["updateWeapon"](), n["hud"]["updateMoney"]()) : e["hasBomb"] = !0x1;
     let r = n["physics"]["groundHeight"](e["x"], e["y"] + .5, e["z"]);
     let i = r > -0x32 && e["y"] - r < 0x3 ? r : e["y"];
     let a = Math["random"]() * 6.28;
@@ -27439,7 +27439,6 @@ function Gb(e, t) {
 var Kb = new ze;
 var qb = new ze;
 new g;
-var Jb = 0x2 * Math["atan"](Math["tan"](0x3c * Math["PI"] / 0xb4 / 0x2) * .75) * 0xb4 / Math["PI"];
 
 function Yb() {
   let e = new Je;
@@ -27461,347 +27460,6 @@ function Xb() {
   let r = new I(new nt(), t());
   return r["name"] = "fill_left", r["position"]["set"](-16.4, 2.5, .7), r["scale"]["set"](.1, 0x8, 0x1a), e["add"](r), e
 }
-var Zb = class e {
-  constructor(e, t, n) {
-    if (!t) {
-      throw Error(__p_KGFS_MAIN_STR(0x1c76b, 0x2f))
-    }
-    if (this["renderer"] = e, this["scene"] = t, this["_cam"] = n || null, this["_baseFov"] = n ? n["fov"] : 0x3a, this["root"] = new h, this["scene"]["add"](this["root"]), this["holder"] = new h, this["root"]["add"](this["holder"]), this["rig"] = new Bb(e), this["holder"]["add"](this["rig"]["root"]), this["scene"]["add"](this["rig"]["clonesRoot"]), !this["scene"]["environment"] && e) {
-      try {
-        let t = new Ce(e);
-        this["scene"]["environment"] = t["fromScene"](Yb(), .04)["texture"], t["dispose"]()
-      } catch {}
-    }
-    this["_sway"] = {
-      ["x"]: 0x0,
-      ["y"]: 0x0
-    }, this["_bob"] = 0x0, this["_bobA"] = 0x0, this["_airT"] = 0x0, this["id"] = null, this["onSound"] = null, this["onDraw"] = null, this["_sfx"] = null
-  } ["resize"]() {} ["_drawStarted"]() {
-    this["onDraw"] && this["onDraw"](this["id"])
-  }
-  async ["setWeapon"](e, t = {}) {
-    if (!Ia(e)) {
-      return !0x1
-    }
-    let n = this["_vmGen"] = (this["_vmGen"] || 0x0) + 0x1;
-    let r = await this["rig"]["setWeapon"](e, t);
-    if (n !== this["_vmGen"]) {
-      return !0x1
-    }
-    if (!r) {
-      return this["id"] = null, !0x1
-    }
-    this["id"] !== e && (this["id"] = e, this["_place"]());
-    let i = typeof t["start"] == "function" ? t["start"]() : t["start"];
-    i && i["action"] && this["rig"]["has"](i["action"]) ? (this["rig"]["play"](i["action"], i["opts"] || {}), this["_armClipSfx"](i["action"])) : this["rig"]["has"]("draw") && !t["noDraw"] ? (this["rig"]["play"]("draw", {
-      ["loop"]: !0x1,
-      ["fade"]: 0x0,
-      ["idleAfter"]: "idle"
-    }), this["_drawStarted"]()) : this["rig"]["play"]("idle", {
-      ["loop"]: !0x0,
-      ["fade"]: 0x0
-    });
-    let a = this["_queued"];
-    return this["_queued"] = null, a && performance["now"]() - a["at"] < 0x258 && (a["seconds"] ? this["rig"]["playTimed"](a["action"], a["seconds"], a["opts"]) : this["rig"]["play"](a["action"], a["opts"])) && this["_armClipSfx"](a["action"]), !0x0
-  }
-  static["IN"] = .0254;
-  static["OFFSET"] = {
-    ["x"]: 0x1,
-    ["y"]: 0x1,
-    ["z"]: -0x1
-  };
-  ["_place"]() {
-    let t = e["IN"];
-    let n = e["OFFSET"];
-    this["holder"]["scale"]["setScalar"](0x1), this["holder"]["quaternion"]["identity"](), this["holder"]["rotateY"](Math["PI"]), this["holder"]["position"]["set"](n["x"] * t, n["z"] * t, -n["y"] * t), this["holder"]["updateMatrixWorld"](!0x0), this["placed"] = {
-      ["fov"]: +Jb["toFixed"](0x2),
-      ["pos"]: this["holder"]["position"]["toArray"]()["map"](e => {
-        return +e["toFixed"](0x4)
-      })
-    }
-  } ["play"](e, t) {
-    if (!this["rig"]["mixer"]) {
-      return this["_queued"] = {
-        ["action"]: e,
-        ["opts"]: t,
-        ["at"]: performance["now"]()
-      }, !0x1
-    }
-    let n = this["rig"]["play"](e, t);
-    return n && this["_armClipSfx"](e), n && e === "draw" && this["_drawStarted"](), n
-  } ["playTimed"](e, t, n) {
-    if (!this["rig"]["mixer"]) {
-      return this["_queued"] = {
-        ["action"]: e,
-        ["seconds"]: t,
-        ["opts"]: n,
-        ["at"]: performance["now"]()
-      }, !0x1
-    }
-    let r = this["rig"]["playTimed"](e, t, n);
-    return r && this["_armClipSfx"](e), r
-  } ["reloadFillTime"](e, t, n) {
-    let r = lt[e];
-    if (!r || !n) {
-      return null
-    }
-    let i = t && r["reload_empty"] && this["rig"]["has"]("reload_empty") ? "reload_empty" : "reload";
-    let a = r[i];
-    let o = a && a["find"](e => {
-      return new RegExp(__p_KGFS_MAIN_STR(0x1c7a0, 0xa), "")["test"](e["id"])
-    });
-    if (!o) {
-      return null
-    }
-    let s = this["rig"]["weaponId"] === e ? this["rig"]["actions"][i] : null;
-    let c = s ? s["getClip"]()["duration"] : n;
-    return Math["max"](0x0, Math["min"](n, o["f"] / 0x1e * (n / (c || n))))
-  } ["hasClipEvents"](e, t) {
-    let n = lt[e];
-    if (!n) {
-      return !0x1
-    }
-    let r = t && this["rig"]["has"]("reload_empty") && n["reload_empty"] || n["reload"];
-    return !!(r && r["length"])
-  } ["_armClipSfx"](e) {
-    let t = lt[this["id"]];
-    let n = t && t[e];
-    if (!n || !n["length"]) {
-      this["_sfx"] = null;
-      return
-    }
-    this["_sfx"] = {
-      ["act"]: this["rig"]["current"],
-      ["i"]: 0x0,
-      ["ev"]: n["map"](eb)
-    }
-  } ["has"](e) {
-    return this["rig"]["has"](e)
-  }
-  get["ready"]() {
-    return !!this["rig"]["mixer"]
-  } ["charge"](e) {
-    return this["rig"]["mixer"] ? this["rig"]["charge"](e) : !0x1
-  } ["endCharge"](e) {
-    this["rig"]["mixer"] && this["rig"]["endCharge"](e)
-  } ["inspect"]({
-    ["deploying"]: e = !0x1
-  } = {}) {
-    let t = this["rig"];
-    let n = ["", "2", "3"]["filter"](e => {
-      return t["has"]("inspect" + e)
-    });
-    if (!n["length"]) {
-      return !0x1
-    }
-    let r = (e, n) => {
-      if (!n) {
-        return this["_sfx"] = null, n
-      }
-      let r = lt[this["id"]];
-      let i = r && r[e];
-      return this["_sfx"] = i && i["length"] ? {
-        ["act"]: t["current"],
-        ["ev"]: i["map"](eb),
-        ["i"]: 0x0
-      } : null, n
-    };
-    let i = t["current"] && t["current"]["getClip"]()["name"];
-    if (i && i["startsWith"]("inspect")) {
-      return !0x1
-    }
-    let a = n[Math["random"]() * n["length"] | 0x0];
-    return e && t["has"]("inspect" + a + "_draw") ? r("inspect" + a + "_draw", t["play"]("inspect" + a + "_draw", {
-      ["fade"]: .05,
-      ["idleAfter"]: "idle"
-    })) : r("inspect" + a, t["play"]("inspect" + a, {
-      ["fade"]: .15,
-      ["idleAfter"]: "idle"
-    }))
-  } ["setVisible"](e) {
-    if (this["root"]["visible"] = e, this["rig"]["clonesRoot"]["visible"] = e, this["_vis"] = e, this["_cam"]) {
-      let t = e ? Jb : this["_baseFov"];
-      Math["abs"](this["_cam"]["fov"] - t) > .01 && (this["_cam"]["fov"] = t, this["_cam"]["updateProjectionMatrix"]())
-    }
-  } ["update"](e, {
-    ["dx"]: t = 0x0,
-    ["dy"]: n = 0x0,
-    ["speed"]: r = 0x0,
-    ["grounded"]: i = !0x0,
-    ["down"]: a = null,
-    ["charge"]: o = 0x1
-  } = {}) {
-    this["rig"]["update"](e);
-    let s = this["rig"] && this["rig"]["_chargeMap"];
-    s && (s["offset"]["x"] = Math["min"](0x1, Math["max"](0x0, o)) * .95), this["_fireSfx"](), this["_paintCheckT"] = (this["_paintCheckT"] || 0x0) + e, this["_paintCheckT"] > 0x1 && this["rig"] && this["rig"]["_paintGun"] && this["rig"]["_paintOpts"] && (this["_paintCheckT"] = 0x0, qf(this["renderer"], this["rig"]["_paintGun"]) && this["rig"]["_paint"](this["rig"]["_paintGun"], this["rig"]["_paintOpts"], !0x0)), this["_updateJiggle"](e, a), this["_updateRagFire"](e), this["_sway"]["x"] += (xe["clamp"](-t * .0016, -.06, .06) - this["_sway"]["x"]) * Math["min"](0x1, e * 0x9), this["_sway"]["y"] += (xe["clamp"](-n * .0016, -.05, .05) - this["_sway"]["y"]) * Math["min"](0x1, e * 0x9), this["_bob"] += e * r * 1.7, this["_airT"] = i ? 0x0 : (this["_airT"] || 0x0) + e;
-    let c = this["_airT"] < .12 ? Math["min"](r / 0x5, 0x1) * .012 : 0x0;
-    this["_bobA"] = (this["_bobA"] || 0x0) + (c - (this["_bobA"] || 0x0)) * Math["min"](0x1, e * 0xe);
-    let l = this["_bobA"];
-    this["root"]["position"]["set"](this["_sway"]["x"] + Math["cos"](this["_bob"]) * l, this["_sway"]["y"] + Math["abs"](Math["sin"](this["_bob"])) * l * .6, 0x0)
-  } ["_updateJiggle"](e, t) {
-    let n = this["rig"];
-    let r = n && n["gun"];
-    if (!(n && n["weaponId"] === "molotov") || !r) {
-      this["_jiggle"] = null, this["_jiggleGun"] = null;
-      return
-    }
-    if (this["_jiggleGun"] !== r) {
-      this["_jiggleGun"] = r, this["_jiggle"] = null;
-      let e = null;
-      r["traverse"](t => {
-        t["isBone"] && t["name"] === $y["bone"] && (e = t)
-      }), e && (this["_jiggle"] = new Qy(e, $y))
-    }
-    this["_jiggle"] && (this["_jiggle"]["update"](e, t), r["traverse"](e => {
-      e["isSkinnedMesh"] && e["skeleton"] && e["skeleton"]["update"]()
-    }))
-  } ["_updateRagFire"](e) {
-    let t = this["rig"];
-    if (t["weaponId"] !== "molotov") {
-      this["_ragFire"] && this["_ragFire"]["burning"] && this["_ragFire"]["extinguish"]();
-      return
-    }
-    this["_ragFire"] ||= new By(this["scene"]);
-    let n = this["_ragFire"];
-    if ((this["_ragBones"] === void 0x0 || this["_ragWeapon"] !== t["gun"]) && (this["_ragWeapon"] = t["gun"], this["_ragBones"] = null, this["_ragEmit"] = null, t["gun"])) {
-      let e = null;
-      let n = null;
-      if (t["gun"]["traverse"](t => {
-          t["isBone"] && (t["name"] === "lighter_flame" ? e = t : t["name"] === "molotov_rag_jiggle" && (n = t))
-        }), e && n) {
-        let r = Gb(t["gun"], n);
-        this["_ragBones"] = {
-          ["flame"]: e,
-          ["rag"]: n,
-          ["pts"]: r && r["pts"],
-          ["mesh"]: r && r["mesh"]
-        }
-      }
-    }
-    let r = this["_ragBones"];
-    if (r) {
-      if (Hb["setFromMatrixPosition"](r["rag"]["matrixWorld"]), r["pts"] && !this["_ragEmit"] && (this["_ragEmit"] = e => {
-          let t = r["pts"][Math["random"]() * r["pts"]["length"] | 0x0];
-          qb["multiplyMatrices"](r["mesh"]["matrixWorld"], r["mesh"]["bindMatrixInverse"])["multiply"](r["rag"]["matrixWorld"]), e["copy"](t)["applyMatrix4"](qb)
-        }), !n["burning"]) {
-        let e = r["flame"]["matrixWorld"]["elements"];
-        Math["hypot"](e[0x0], e[0x1], e[0x2]) > 1e-4 && (Ub["setFromMatrixPosition"](r["flame"]["matrixWorld"]), Ub["distanceTo"](Hb) <= Vb && n["light"]())
-      }
-      n["update"](e, this["_ragEmit"] || Hb, this["_cam"])
-    }
-  } ["extinguishRagFire"]() {
-    this["_ragFire"] && this["_ragFire"]["extinguish"]()
-  } ["_fireSfx"]() {
-    let e = this["_sfx"];
-    if (!e) {
-      return
-    }
-    if (this["rig"]["current"] !== e["act"]) {
-      this["_sfx"] = null;
-      return
-    }
-    let t = e["act"]["time"];
-    for (; e["i"] < e["ev"]["length"] && t >= e["ev"][e["i"]]["t"];) {
-      let t = e["ev"][e["i"]++];
-      this["onSound"] && this["onSound"](t["id"], t)
-    }
-    e["i"] >= e["ev"]["length"] && (this["_sfx"] = null)
-  } ["_muzzleAttach"](e) {
-    let t = this["rig"] && this["rig"]["boneByName"];
-    if (!t) {
-      return null
-    }
-    let n = this["rig"]["weaponId"];
-    let r = n && no[n];
-    let i = r && (e && r["muzzleAttach2"] ? r["muzzleAttach2"] : r["muzzleAttach"]);
-    let a = i ? t["get"](i["bone"]) : null;
-    if (a && (a["updateWorldMatrix"](!0x0, !0x1), this["root"]["updateWorldMatrix"](!0x0, !0x1), tb["setFromMatrixPosition"](a["matrixWorld"])["applyMatrix4"](ib["copy"](this["root"]["matrixWorld"])["invert"]()), Math["abs"](tb["x"]) < .05 && Math["abs"](tb["y"]) < .05 && Math["abs"](tb["z"]) < .05 && (a = null)), a = a || t["get"]("wpn") || t["get"]("weapon"), a && i) {
-      return a["updateWorldMatrix"](!0x0, !0x1), {
-        ["parent"]: a,
-        ["at"]: i
-      }
-    }
-    let o = t["get"]("muzzle") || t["get"]("wpnTip") || t["get"]("wpnEnd");
-    return o ? (o["updateWorldMatrix"](!0x0, !0x1), {
-      ["parent"]: o,
-      ["at"]: null
-    }) : null
-  } ["muzzleWorld"](e, t) {
-    let n = this["_muzzleAttach"](t);
-    return n ? (e ||= new g, n["at"] ? e["set"](n["at"]["o"][0x0], n["at"]["o"][0x1], n["at"]["o"][0x2])["applyMatrix4"](n["parent"]["matrixWorld"]) : e["setFromMatrixPosition"](n["parent"]["matrixWorld"])) : null
-  } ["muzzleQuat"](e, t) {
-    let n = this["_muzzleAttach"](t);
-    return n ? (e ||= new F, n["parent"]["matrixWorld"]["decompose"](nb, e, rb), e) : null
-  }
-  get["twinMuzzle"]() {
-    let e = this["rig"] && this["rig"]["weaponId"];
-    return !!(e && no[e] && no[e]["muzzleAttach2"])
-  } ["_shellAttach"](e) {
-    let t = this["rig"];
-    let n = t && t["weaponId"];
-    let r = n && no[n];
-    let i = r && (e && r["shellAttach2"] || r["shellAttach"]);
-    if (!i || !t["gun"]) {
-      return null
-    }
-    let a = this["_shellBones"];
-    (!a || a["gun"] !== t["gun"]) && (a = this["_shellBones"] = {
-      ["gun"]: t["gun"],
-      ["bones"]: new Map
-    });
-    let o = a["bones"]["get"](i["bone"]);
-    if (o === void 0x0) {
-      if (o = null, t["gun"]["traverse"](e => {
-          !o && e["isBone"] && e["name"] === i["bone"] && (o = e)
-        }), !o) {
-        let e = t["boneByName"];
-        o = e && (e["get"]("wpn") || e["get"]("weapon")) || null
-      }
-      a["bones"]["set"](i["bone"], o)
-    }
-    return o ? {
-      ["bone"]: o,
-      ["at"]: i
-    } : null
-  } ["shellPort"](e, t) {
-    let n = this["_shellAttach"](e);
-    if (!n) {
-      return null
-    }
-    let r = this["_port"] ||= {
-      ["p"]: new g,
-      ["f"]: new g,
-      ["l"]: new g,
-      ["u"]: new g
-    };
-    let i = n["bone"]["matrixWorld"];
-    let a = i["elements"];
-    r["p"]["set"](n["at"]["o"][0x0], n["at"]["o"][0x1], n["at"]["o"][0x2])["applyMatrix4"](i);
-    let o = a[0x0];
-    let s = a[0x1];
-    let c = a[0x2];
-    let l = 0x1 / (Math["hypot"](o, s, c) || 0x1);
-    o *= l, s *= l, c *= l;
-    let u = a[0x4];
-    let d = a[0x5];
-    let f = a[0x6];
-    l = 0x1 / (Math["hypot"](u, d, f) || 0x1), u *= l, d *= l, f *= l;
-    let p = a[0x8];
-    let m = a[0x9];
-    let h = a[0xa];
-    if (l = 0x1 / (Math["hypot"](p, m, h) || 0x1), p *= l, m *= l, h *= l, ho(o, s, c, u, d, f, p, m, h, n["at"]["a"] || co, r), t) {
-      if (this["_vis"] !== !0x1 && this["_cam"]) {
-        let e = Math["tan"](t["fov"] * Math["PI"] / 0x168) / Math["tan"](this["_cam"]["fov"] * Math["PI"] / 0x168);
-        r["p"]["x"] *= e, r["p"]["y"] *= e
-      }
-      let e = t["quaternion"];
-      r["p"]["applyQuaternion"](e)["add"](t["position"]), r["f"]["applyQuaternion"](e), r["l"]["applyQuaternion"](e), r["u"]["applyQuaternion"](e)
-    }
-    return r
-  } ["dispose"]() {
-    this["rig"]["dispose"](), this["id"] = null, this["_sfx"] = null, this["_ragFire"] &&= (this["_ragFire"]["dispose"](), null), this["_ragBones"] = void 0x0, this["_ragWeapon"] = null, this["_ragEmit"] = null
-  }
-};
 var Qb = {
   ["t"]: "t",
   ["T"]: "t",
@@ -28579,7 +28237,7 @@ window["game"] = new class {
       return import("./flashtune-DLjJ4-Oz.js")["then"](e => {
         return e["openFlashTune"]()
       })
-    }, [])["catch"](() => {}), this["cs2"] = this["_devq"]["get"]("cs2") === "0" ? null : new Zb(this["renderer"], this["viewmodel"]["scene"], this["viewmodel"]["camera"]), this["cs2"] && this["viewmodel"]["mirror"] && (this["viewmodel"]["mirror"]["add"](this["cs2"]["root"]), this["viewmodel"]["mirror"]["add"](this["cs2"]["rig"]["clonesRoot"])), this["cs2"] && this["cs2"]["rig"] && (this["cs2"]["rig"]["metalEnv"] = this["vmEnvTexMetal"]), this["cs2"] && (this["cs2"]["onSound"] = this["_cs2Sound"]), this["voice"] = new cx(this), this["cs2"] && (this["cs2"]["onDraw"] = e => {
+    }, [])["catch"](() => {}), this["cs2"] = this["_devq"]["get"]("cs2") === "0" ? null : new Zb(this["renderer"], this["viewmodel"]["scene"], this["viewmodel"]["camera"]), this["cs2"] && this["viewmodel"]["mirror"] && (this["viewmodel"]["mirror"]["add"](this["cs2"]["root"]), this["viewmodel"]["mirror"]["add"](this["cs2"]["rig"]["clonesRoot"])), this["cs2"] && this["cs2"]["rig"] && (this["cs2"]["rig"]["metalEnv"] = this["vmEnvTexMetal"]), this["cs2"] && (this["cs2"]["onSound"] = this["_cs2Sound"]), this["voice"] = new cx(this), this["cs2"] && applyVmSettings(this), this["cs2"] && (this["cs2"]["onDraw"] = e => {
       let t = this["_povEnt"];
       if (t && t !== this["player"] && this["povIs"](t)) {
         if (new RegExp(__p_KGFS_MAIN_STR(0x1c8a9, 0x8), "")["test"](e)) {
