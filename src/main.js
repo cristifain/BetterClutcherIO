@@ -28525,7 +28525,7 @@ window["game"] = new class {
       try {
         e = matchMedia(__p_KGFS_MAIN_STR(0x1c879, 0x20))["matches"]
       } catch {}
-      e && (l = !0x0, this["_requestFullscreen"]())
+      e && (l = !0x0)
     }, !0x0), addEventListener("beforeunload", e => {
       (this["state"] === "playing" || this["state"] === "teamselect") && (e["preventDefault"](), e["returnValue"] = "")
     }), this["quality"] = this["_bootQuality"];
@@ -29364,6 +29364,12 @@ window["game"] = new class {
       return t
     }
   } ["startGame"](e, t, n, r) {
+    // the main menu doubles as the in-game pause screen: any PLAY press while
+    // the match is paused just resumes instead of starting a new game
+    if (this["hud"] && this["hud"]["escPauseOpen"]) {
+      this["hud"]["hidePause"](), this["resume"](!0x0);
+      return Promise["resolve"](!0x1)
+    }
     if (this["_starting"]) {
       return this["_ready"]
     }
@@ -29975,7 +29981,7 @@ window["game"] = new class {
       } catch {}
     }
   } ["_enterFullscreen"]() {
-    (this["state"] === "teamselect" || this["state"] === "playing") && this["canFullscreen"]() && !this["_fsElement"]() && this["_requestFullscreen"]()
+    // auto-fullscreen removed - fullscreen is manual only (F11 or the settings button)
   } ["menuFullscreen"]() {
     this["canFullscreen"]() && !this["_fsElement"]() && (this["_fsManual"] = !0x0, this["_requestFullscreen"]())
   } ["_exitFullscreen"]() {
@@ -31295,7 +31301,7 @@ window["game"] = new class {
       let o = i ? -0x12c : Math["round"]((n && n["reward"] !== void 0x0 ? n["reward"] : Eo["kill"]) * a);
       t["money"] = Math["max"](0x0, Math["min"](this["modeCtl"] ? Eo["maxMoney"] : IS, (t["money"] || 0x0) + o));
       let s = t["isPlayer"] || this["povIs"](t);
-      s && i && (this["hud"]["reward"](__p_KGFS_MAIN_STR(0x1cc15, 0x13)), this["hud"]["updateMoney"]()), s && t["team"] !== e["team"] && (r && e["helmet"] ? (this["audio"]["play"]("headshot_kill_dink"), this["audio"]["play"]("headshot_kill_flesh")) : r ? this["audio"]["play"]("headshot_kill") : this["audio"]["play"](e["armor"] > 0x0 ? "kill_body_armor" : "kill_body"), this["audio"]["play"]("kill_confirm"), this["effects"]["shake"](r ? .12 : .06), this["hud"]["reward"]("+$" + o + (r ? __p_KGFS_MAIN_STR(0x1cc2a, 0x11) : "")), this["hud"]["updateMoney"](), t["isPlayer"] && (this["hud"] && this["hud"]["_awardKill"] && this["hud"]["_awardKill"](!0x1), H["addStat"]("kills")))
+      s && i && (this["hud"]["reward"](__p_KGFS_MAIN_STR(0x1cc15, 0x13)), this["hud"]["updateMoney"]()), s && t["team"] !== e["team"] && (r && e["helmet"] ? (this["audio"]["play"]("headshot_kill_dink"), this["audio"]["play"]("headshot_kill_flesh")) : r ? this["audio"]["play"]("headshot_kill") : this["audio"]["play"](e["armor"] > 0x0 ? "kill_body_armor" : "kill_body"), this["audio"]["play"]("kill_confirm"), this["effects"]["shake"](r ? .12 : .06), this["hud"]["reward"]("+1 TOKEN" + (r ? __p_KGFS_MAIN_STR(0x1cc2a, 0x11) : "")), this["hud"]["updateMoney"](), t["isPlayer"] && (this["hud"] && this["hud"]["_awardKill"] && this["hud"]["_awardKill"](!0x1), H["addStat"]("kills")))
     }
     let o = !!(n && n["class"] === "sniper" && t && (t["isPlayer"] ? !this["scoped"] : !(t["zoom"] > 0x0)));
     let s = !!(t && t !== e && t["alive"] !== void 0x0 && t["onGround"] === !0x1);

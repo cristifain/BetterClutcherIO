@@ -1700,7 +1700,7 @@ var Nv = class e {
         } catch {}
       }
     }
-    this["setPlayLoading"](!0x1), this["_syncSettingsRows"](), this["_hwNotice"](), this["_lockNotice"](), this["_syncFsBtn"] && this["_syncFsBtn"](), this["pauseEl"]["style"]["display"] = "none", this["buyEl"]["style"]["display"] = "none", this["root"]["classList"]["add"]("inmenu"), document["body"]["classList"]["add"]("menuopen"), this["refreshMenuChrome"](), this["renderBinds"]();
+    this["setPlayLoading"](!0x1), this["_syncSettingsRows"](), this["_hwNotice"](), this["_lockNotice"](), this["_syncFsBtn"] && this["_syncFsBtn"](), this["pauseEl"]["style"]["display"] = "none", this["buyEl"]["style"]["display"] = "none", this["root"]["classList"]["add"]("inmenu"), document["body"]["classList"]["add"]("menuopen"), this["escPauseOpen"] = !0x1, this["menuEl"]["classList"]["remove"]("ingame"), this["_leaveBtn"] && (this["_leaveBtn"]["style"]["display"] = "none"), this["refreshMenuChrome"](), this["renderBinds"]();
     let e = this["menuEl"]["querySelector"](__p_KGFS_MAIN_STR(0x16016, 0xf));
     if (e) {
       for (let t of e["children"]) {
@@ -2355,7 +2355,7 @@ var Nv = class e {
           return
         }
         
-        if (e.killer && e.killer === t) self["_awardKill"](!0x0);
+        if (e.killer && e.killer === t) (self["_awardKill"](!0x0), self["reward"]("+1.5 TOKENS"));
         let n = remoteRec(e.id);
         n.alive = false;
         let r = roster.get(e.id);
@@ -2812,9 +2812,24 @@ var Nv = class e {
     let h = document.getElementById("mkhint");
     h && h.remove();
   } ["showPause"]() {
-    this["buyOpen"] || (this["_renderPauseKeys"](), this["_lockNotice"](), this["pauseEl"]["style"]["display"] = "flex", this["pauseOpen"] = !0x0)
+    if (this["buyOpen"]) return;
+    this["_renderPauseKeys"](), this["_lockNotice"]();
+    // in-game pause = the main menu itself, transparent over the live game
+    // (PLAY or ESC resumes; the QUIT TO MENU button leaves the match)
+    this["pauseOpen"] = !0x0, this["escPauseOpen"] = !0x0;
+    this["pauseEl"]["style"]["display"] = "none";
+    this["menuEl"]["style"]["display"] = "block";
+    this["menuEl"]["classList"]["add"]("ingame"), this["menuEl"]["classList"]["remove"]("pausemode");
+    this["root"]["classList"]["add"]("inmenu"), document["body"]["classList"]["add"]("menuopen");
+    this["refreshMenuChrome"]();
+    this["_leaveBtn"] || (this["_leaveBtn"] = document["createElement"]("button"), this["_leaveBtn"]["id"] = "pause-leave", this["_leaveBtn"]["textContent"] = "QUIT TO MENU", this["_leaveBtn"]["onclick"] = () => {
+      return this["game"]["toMenu"]()
+    }, this["menuEl"]["appendChild"](this["_leaveBtn"]));
+    this["_leaveBtn"]["style"]["display"] = "block"
   } ["hidePause"]() {
-    this["pauseEl"]["style"]["display"] = "none", this["pauseOpen"] = !0x1, this["closeHowTo"]()
+    this["pauseEl"]["style"]["display"] = "none", this["pauseOpen"] = !0x1, this["closeHowTo"]();
+    // closes both the old pause panel and the in-game main-menu pause
+    this["escPauseOpen"] && (this["escPauseOpen"] = !0x1, this["menuEl"]["style"]["display"] = "none", this["menuEl"]["classList"]["remove"]("ingame"), this["root"]["classList"]["remove"]("inmenu"), document["body"]["classList"]["remove"]("menuopen"), this["_leaveBtn"] && (this["_leaveBtn"]["style"]["display"] = "none"))
   } ["keyName"](e) {
     let t = this["_boundCodes"](e);
     return t["length"] ? t["map"](e => {

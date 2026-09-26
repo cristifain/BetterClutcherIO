@@ -116,11 +116,13 @@ window.__cs2UiScale = function () {
     text-align: center; margin-top: 4px; }
   #inspectov .in-ref.hide, #caseopen .in-ref.hide { display: none; }
   @media (max-width: 900px) { #inspectov .in-ref, #caseopen .in-ref { width: 34vw; right: 10px; top: 10px; } }
-  #pause-back { position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%); z-index: 60;
+  #pause-back, #pause-leave { position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%); z-index: 60;
     background: var(--accent, #8bc53f); color: #10151a; border: 0; padding: 12px 26px; border-radius: 5px;
     font-weight: 800; letter-spacing: 2px; font-size: 13px; cursor: pointer; display: none;
     box-shadow: 0 6px 22px rgba(0,0,0,0.5); }
-  #pause-back:hover { filter: brightness(1.1); }
+  #pause-back:hover, #pause-leave:hover { filter: brightness(1.1); }
+  /* in-game pause: the main menu floats transparent over the live game */
+  #menu.ingame { background: transparent; }
   #tabs button { white-space: nowrap; }
   .qrow button.isdef::after { content: '\2022'; position: absolute; top: 1px; right: 3px;
     font-size: 9px; line-height: 1; opacity: 0.45; pointer-events: none; }
