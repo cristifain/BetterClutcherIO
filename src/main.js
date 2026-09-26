@@ -29268,16 +29268,9 @@ window["game"] = new class {
       return this["state"] === "menu" && !this["_starting"]
     };
     let t = this["_menuSel"](__p_KGFS_MAIN_STR(0x1317c, 0x9), "oasis");
-    // preload EVERY map's assets at boot (GLB download + parse, cached per
-    // map) so joining any map skips the download - one at a time to keep the
-    // peak boot memory/GPU load the same as a single map on weak machines
-    let n = Object["keys"](Hx)["reduce"]((e, t) => {
-      return e["then"](() => {
-        return Hx[t] && Hx[t]["preload"] ? Hx[t]["preload"](this["renderer"])["catch"](() => {
-          return null
-        }) : null
-      })
-    }, Promise["resolve"]());
+    // NO map preload at boot: maps download on demand when a match actually
+    // starts (startGame preloads the selected map via Hx[e]["preload"]), so
+    // first load only fetches the shell, not both maps' GLBs
     if (await new Promise(e => {
         return setTimeout(e, 0x4b0)
       }), !e() || this["_isMobile"]) {

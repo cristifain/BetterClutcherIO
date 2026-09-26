@@ -2621,17 +2621,26 @@ var Nv = class e {
       let r = j.reward.duplicate ? (H["data"]["items"] || []).find(it => it.skin === j.reward.id) : null;
       r = r || H["add"](n, { wear: (n.wmin + n.wmax) / 2, st: !0x1, seed: 0x0 });
       let def = MARKET_CASES.find(c => c.id === crate) || { id: crate, name: crate };
-      // the animation lives inside the legacy menu element - lift it above the
-      // menu-root shell while it runs; the closeCase wrapper restores everything
-      this["menuEl"]["style"]["display"] = "block";
-      this["menuEl"]["style"]["zIndex"] = "300";
+      // The animation overlay (#caseopen) lives inside #menu, which is nested
+      // in #hud (z-index 10) - the menu-root shell (z-index 90) renders on top
+      // and completely hides it. Lift the overlay to body level for the run
+      // (its own z-index puts it above everything), and the closeCase wrapper
+      // moves it back home so closeCase's own queries keep working.
+      let ov = this["menuEl"].querySelector("#caseopen");
+      if (ov) {
+        this["_caseOvHome"] = ov.parentElement;
+        document.body.appendChild(ov);
+        ov.style.zIndex = "500";
+      }
       if (!this["_closeCaseWrapped"]) {
         this["_closeCaseWrapped"] = !0x0;
         let orig = this["closeCase"];
         this["closeCase"] = function () {
+          try {
+            let o = document.getElementById("caseopen");
+            o && this["_caseOvHome"] && this["_caseOvHome"].appendChild(o), o && (o.style.zIndex = "");
+          } catch {}
           let out = orig.apply(this, arguments);
-          this["menuEl"]["style"]["display"] = "none";
-          this["menuEl"]["style"]["zIndex"] = "";
           try { this["renderLocker"](), this["renderMarket"](); } catch {}
           return out
         };
