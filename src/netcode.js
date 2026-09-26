@@ -282,17 +282,22 @@ function handleMsg(m) {
     }
     case "players": {
       // authoritative snapshot (every ~5s): reconcile - spawn anything the
-      // client is missing (e.g. a lost "join" event) and refresh teams
+      // client is missing (e.g. a lost "join" event), refresh teams + hp
       if (!connected || !m.list) break;
       for (let p of m.list) {
         if (p.id == null || p.id === myId) continue;
         let r = remotes.get(p.id);
         if (!r) {
-          remotes.set(p.id, { id: p.id, x: p.x || 0, y: p.y || 0, z: p.z || 0, ry: p.ry || 0, tx: p.x || 0, ty: p.y || 0, tz: p.z || 0, ttry: p.ry || 0, hp: 100, team: p.team });
+          remotes.set(p.id, { id: p.id, x: p.x || 0, y: p.y || 0, z: p.z || 0, ry: p.ry || 0, tx: p.x || 0, ty: p.y || 0, tz: p.z || 0, ttry: p.ry || 0, hp: p.hp == null ? 100 : p.hp, team: p.team });
           try {
-            opts.spawnRemotePlayer(p.id, { x: p.x || 0, y: p.y || 0, z: p.z || 0, ry: p.ry || 0, hp: 100, team: p.team });
+            opts.spawnRemotePlayer(p.id, { x: p.x || 0, y: p.y || 0, z: p.z || 0, ry: p.ry || 0, hp: p.hp, team: p.team });
           } catch {}
-        } else if (p.team && r.team !== p.team) {
+        } else if (isNum(p.hp) && p.hp !== r.hp) {
+          // self-heal a missed death/respawn event
+          r.hp = p.hp;
+          try { opts.onHp({ id: p.id, hp: p.hp }) } catch {}
+        }
+        if (p.team && r.team !== p.team) {
           r.team = p.team;
         }
       }
