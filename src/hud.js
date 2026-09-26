@@ -1384,8 +1384,14 @@ var Nv = class e {
     }, this["menuEl"]["appendChild"](a), this["menuEl"]["classList"]["add"]("rv3dmode"), this["_inspectOv"] = a
   } ["closeInspect"](e = !0x0) {
     this["_inspectOv"] && (this["_inspectOv"]["remove"](), this["_inspectOv"] = null, this["menuEl"]["classList"]["remove"]("rv3dmode")), this["game"]["hideSkinViewer"](), this["_inDrag"] = null, e && this["reopenCaseInfoIfPending"]()
+  } ["_portLoadout"]() {
+    // the old menu is retired: move its loadout page into the new menu shell
+    // (one-time DOM move - the delegated click handlers travel with the node)
+    let host = this["_mmRoot"] && this["_mmRoot"]["querySelector"]("#mmLoadoutView");
+    let page = document["getElementById"]("tab-loadout");
+    host && page && page["parentElement"] !== host && host["appendChild"](page)
   } ["renderLoadout"]() {
-    let e = this["menuEl"]["querySelector"](__p_KGFS_MAIN_STR(0x1307b, 0xa));
+    let e = document["getElementById"]("lo-body");
     if (!e) {
       return
     }
@@ -1431,7 +1437,7 @@ var Nv = class e {
     }
     e["innerHTML"] = l
   } ["_loToast"](e) {
-    let t = this["menuEl"]["querySelector"](__p_KGFS_MAIN_STR(0x155e7, 0xb));
+    let t = document["getElementById"]("lo-toast");
     t && (t["textContent"] = e, t["classList"]["add"]("show"), clearTimeout(this["_loToastT"]), this["_loToastT"] = setTimeout(() => {
       return t["classList"]["remove"]("show")
     }, 0x898))
@@ -1700,7 +1706,7 @@ var Nv = class e {
         } catch {}
       }
     }
-    this["setPlayLoading"](!0x1), this["_syncSettingsRows"](), this["_hwNotice"](), this["_lockNotice"](), this["_syncFsBtn"] && this["_syncFsBtn"](), this["pauseEl"]["style"]["display"] = "none", this["buyEl"]["style"]["display"] = "none", this["root"]["classList"]["add"]("inmenu"), document["body"]["classList"]["add"]("menuopen"), this["escPauseOpen"] = !0x1, this["menuEl"]["classList"]["remove"]("ingame"), this["_leaveBtn"] && (this["_leaveBtn"]["style"]["display"] = "none"), this["refreshMenuChrome"](), this["renderBinds"]();
+    this["setPlayLoading"](!0x1), this["_syncSettingsRows"](), this["_hwNotice"](), this["_lockNotice"](), this["_syncFsBtn"] && this["_syncFsBtn"](), this["pauseEl"]["style"]["display"] = "none", this["buyEl"]["style"]["display"] = "none", this["root"]["classList"]["add"]("inmenu"), document["body"]["classList"]["add"]("menuopen"), this["escPauseOpen"] = !0x1, this["menuEl"]["classList"]["remove"]("ingame"), this["_mmRoot"] && this["_mmRoot"]["classList"]["remove"]("ingame"), this["_leaveBtn"] && (this["_leaveBtn"]["style"]["display"] = "none"), this["refreshMenuChrome"](), this["renderBinds"]();
     let e = this["menuEl"]["querySelector"](__p_KGFS_MAIN_STR(0x16016, 0xf));
     if (e) {
       for (let t of e["children"]) {
@@ -1708,7 +1714,7 @@ var Nv = class e {
       }
     }
   } ["hideMenu"]() {
-    this["menuEl"]["style"]["display"] = "none", this["_mmRoot"] && this["_mmRoot"]["classList"]["remove"]("open"), this["setPlayLoading"](!0x1), this["root"]["classList"]["remove"]("inmenu"), document["body"]["classList"]["remove"]("menuopen")
+    this["menuEl"]["style"]["display"] = "none", this["_mmRoot"] && this["_mmRoot"]["classList"]["remove"]("open"), this["setPlayLoading"](!0x1), this["root"]["classList"]["remove"]("inmenu"), document["body"]["classList"]["remove"]("menuopen"), this["_leaveBtn"] && (this["_leaveBtn"]["style"]["display"] = "none")
   }
   // ------------------------------------------------------------------ main menu bridge
   // Wires the static #menu-root shell (index.html) to the game: match start,
@@ -1754,6 +1760,10 @@ var Nv = class e {
       this["_dismissMkHint"](), this["renderMarket"]()
     });
     invTabBtn && invTabBtn.addEventListener("click", () => this["renderLocker"]());
+    let loTabBtn = q("#mmLoadoutTab");
+    loTabBtn && loTabBtn.addEventListener("click", () => {
+      this["renderLoadout"](), this["_portLoadout"]()
+    });
 
     // ---- profile square (top right): options -> Log out with confirmation.
     // Confirming disconnects from any match FIRST, then logs the account out
@@ -2822,22 +2832,30 @@ var Nv = class e {
   } ["showPause"]() {
     if (this["buyOpen"]) return;
     this["_renderPauseKeys"](), this["_lockNotice"]();
-    // in-game pause = the main menu itself, transparent over the live game
-    // (PLAY or ESC resumes; the QUIT TO MENU button leaves the match)
+    // in-game pause = the NEW main menu (#menu-root) over the live game
+    // (PLAY or ESC resumes; QUIT TO MENU leaves the match)
     this["pauseOpen"] = !0x0, this["escPauseOpen"] = !0x0;
     this["pauseEl"]["style"]["display"] = "none";
-    this["menuEl"]["style"]["display"] = "block";
-    this["menuEl"]["classList"]["add"]("ingame"), this["menuEl"]["classList"]["remove"]("pausemode");
+    this["_mmRoot"] = this["_mmRoot"] || document["getElementById"]("menu-root");
+    let m = this["_mmRoot"];
+    if (m) {
+      m["classList"]["add"]("open", "ingame");
+      m["_openPlay"] && m["_openPlay"]();
+      if (!this["_mmWired"]) {
+        this["_mmWired"] = !0x0;
+        try {
+          this["_wireMainMenu"]()
+        } catch {}
+      }
+    }
     this["root"]["classList"]["add"]("inmenu"), document["body"]["classList"]["add"]("menuopen");
-    this["refreshMenuChrome"]();
     this["_leaveBtn"] || (this["_leaveBtn"] = document["createElement"]("button"), this["_leaveBtn"]["id"] = "pause-leave", this["_leaveBtn"]["textContent"] = "QUIT TO MENU", this["_leaveBtn"]["onclick"] = () => {
       return this["game"]["toMenu"]()
-    }, this["menuEl"]["appendChild"](this["_leaveBtn"]));
+    }, document["body"]["appendChild"](this["_leaveBtn"]));
     this["_leaveBtn"]["style"]["display"] = "block"
   } ["hidePause"]() {
     this["pauseEl"]["style"]["display"] = "none", this["pauseOpen"] = !0x1, this["closeHowTo"]();
-    // closes both the old pause panel and the in-game main-menu pause
-    this["escPauseOpen"] && (this["escPauseOpen"] = !0x1, this["menuEl"]["style"]["display"] = "none", this["menuEl"]["classList"]["remove"]("ingame"), this["root"]["classList"]["remove"]("inmenu"), document["body"]["classList"]["remove"]("menuopen"), this["_leaveBtn"] && (this["_leaveBtn"]["style"]["display"] = "none"))
+    this["escPauseOpen"] && (this["escPauseOpen"] = !0x1, this["_mmRoot"] && this["_mmRoot"]["classList"]["remove"]("open", "ingame"), this["root"]["classList"]["remove"]("inmenu"), document["body"]["classList"]["remove"]("menuopen"), this["_leaveBtn"] && (this["_leaveBtn"]["style"]["display"] = "none"))
   } ["keyName"](e) {
     let t = this["_boundCodes"](e);
     return t["length"] ? t["map"](e => {

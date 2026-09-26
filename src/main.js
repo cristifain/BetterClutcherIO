@@ -23154,7 +23154,7 @@ var Ng = class {
         t["closePauseMenu"](), t["hidePause"](), e["resume"]();
         return
       }
-      e["state"] === "playing" && (t["showPauseTab"] ? t["showPauseTab"]("settings") : t["showPause"]())
+      e["state"] === "playing" && t["showPause"]()
     }), this["_press"](this["btnCrouch"], () => {
       this["input"]["touchActions"]["has"]("crouch") ? (this["input"]["touchActions"]["delete"]("crouch"), this["btnCrouch"]["classList"]["remove"]("on")) : (this["input"]["touchActions"]["add"]("crouch"), this["btnCrouch"]["classList"]["add"]("on"))
     }), this["_movePid"] = null, this["_lookPid"] = null, this["_moveOrigin"] = null;
@@ -31986,10 +31986,11 @@ window["game"] = new class {
       }
       if (this["input"]["wasPressed"]("Escape") && (!this["input"]["locked"] || this["input"]["_emulated"])) {
         let e = this["hud"]["pauseMode"] && this["hud"]["menuEl"]["querySelector"](__p_KGFS_MAIN_STR(0x13de1, 0xb));
-        e && e["style"]["display"] !== "none" ? this["hud"]["closeCase"]() : this["hud"]["pauseMode"] ? this["hud"]["closePauseMenu"]() : this["hud"]["buyOpen"] ? this["hud"]["buyBack"]() || this["hud"]["closeBuy"]() : this["hud"]["howToOpen"] ? this["hud"]["closeHowTo"]() : this["hud"]["pauseEl"]["style"]["display"] === "flex" ? this["resume"](!0x1) : (this["input"]["unlock"](), this["hud"]["showPause"]())
+        e && e["style"]["display"] !== "none" ? this["hud"]["closeCase"]() : this["hud"]["pauseMode"] ? this["hud"]["closePauseMenu"]() : this["hud"]["buyOpen"] ? this["hud"]["buyBack"]() || this["hud"]["closeBuy"]() : this["hud"]["howToOpen"] ? this["hud"]["closeHowTo"]() : this["hud"]["escPauseOpen"] ? this["resume"](!0x1) : (this["input"]["unlock"](), this["hud"]["showPause"]())
       }
       if (this["input"]["wasPressedA"]("cases") && !this["hud"]["pauseMode"] && (this["input"]["unlock"](), setTimeout(() => {
-          this["state"] === "playing" && this["hud"]["showPauseTab"]("cases")
+          // the old cases tab is retired: the new menu's store view covers it
+          this["state"] === "playing" && this["hud"]["showPause"](), this["hud"]["_mmRoot"] && this["hud"]["_mmRoot"]["_openMarket"] && (this["hud"]["_mmRoot"]["_openMarket"](), this["hud"]["renderMarket"]())
         }, 0x0)), this["input"]["wasPressedA"]("drop") && this["player"]["alive"]) {
         let e = this["weapons"]["current"];
         let t = V[e];

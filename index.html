@@ -116,11 +116,17 @@ window.__cs2UiScale = function () {
     text-align: center; margin-top: 4px; }
   #inspectov .in-ref.hide, #caseopen .in-ref.hide { display: none; }
   @media (max-width: 900px) { #inspectov .in-ref, #caseopen .in-ref { width: 34vw; right: 10px; top: 10px; } }
-  #pause-back, #pause-leave { position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%); z-index: 60;
+  #pause-back, #pause-leave { position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%); z-index: 300;
     background: var(--accent, #8bc53f); color: #10151a; border: 0; padding: 12px 26px; border-radius: 5px;
     font-weight: 800; letter-spacing: 2px; font-size: 13px; cursor: pointer; display: none;
     box-shadow: 0 6px 22px rgba(0,0,0,0.5); }
   #pause-back:hover, #pause-leave:hover { filter: brightness(1.1); }
+  /* retired old menus: the #menu-root shell is the only menu now */
+  #menu, #pause { display: none !important; }
+  /* in-game pause: the shell floats over the live game; the loadout page
+     (ported from the old menu) fills its view below the 42px header */
+  #menu-root.ingame .mm-bg, #menu-root.ingame .mm-bg::before { background: transparent; }
+  #menu-root #tab-loadout { display: block !important; position: absolute; inset: 42px 0 0 0; }
   /* in-game pause: the main menu floats transparent over the live game */
   #menu.ingame { background: transparent; }
   #tabs button { white-space: nowrap; }
@@ -1701,7 +1707,7 @@ window.__cs2UiScale = function () {
       </div>
       <div class="nav">
         <div class="nav-tab" id="mmInvTab">INVENTORY</div>
-        <div class="nav-tab mm-soon">LOADOUT</div>
+        <div class="nav-tab" id="mmLoadoutTab">LOADOUT</div>
         <div class="nav-tab active" id="mmPlayTab">PLAY</div>
         <div class="nav-tab" id="mmMarketTab">STORE</div>
         <div class="nav-tab mm-soon">NEWS</div>
@@ -1824,6 +1830,14 @@ window.__cs2UiScale = function () {
           <button class="header-close" id="mmInvClose" title="Close">✕</button>
         </div>
         <div class="market-view" id="mmInvWrap"></div>
+      </div>
+
+      <!-- ===== LOADOUT VIEW (page ported from the retired old menu) ===== -->
+      <div class="view" id="mmLoadoutView">
+        <div class="settings-header-top">
+          <div class="header-tab active">LOADOUT</div>
+          <button class="header-close" id="mmLoadoutClose" title="Close">✕</button>
+        </div>
       </div>
 
       <!-- ===== PLAY VIEW ===== -->
@@ -1954,6 +1968,9 @@ window.__cs2UiScale = function () {
     var marketView = document.getElementById('mmMarketView');
     var invView = document.getElementById('mmInvView');
     var playView = document.getElementById('mmPlayView');
+    var loadoutView = document.getElementById('mmLoadoutView');
+    var loadoutTab = document.getElementById('mmLoadoutTab');
+    var loadoutClose = document.getElementById('mmLoadoutClose');
     var closeBtn = document.getElementById('mmSettingsClose');
     var marketClose = document.getElementById('mmMarketClose');
     var invClose = document.getElementById('mmInvClose');
@@ -1973,6 +1990,7 @@ window.__cs2UiScale = function () {
       marketView.classList.remove('open');
       invView.classList.remove('open');
       playView.classList.remove('open');
+      loadoutView.classList.remove('open');
       homeView.style.display = 'none';
     }
     function setActiveIcon(which) {
@@ -2008,7 +2026,13 @@ window.__cs2UiScale = function () {
       playView.classList.add('open');
       setActiveIcon('home');
     }
+    function openLoadout() {
+      hideViews();
+      loadoutView.classList.add('open');
+      setActiveIcon('home');
+    }
     root._openPlay = openPlay;
+    root._openLoadout = openLoadout;
     root._openSettings = openSettings;
     root._openMarket = openMarket;
     root._openInv = openInv;
@@ -2020,6 +2044,8 @@ window.__cs2UiScale = function () {
     playTab.addEventListener('click', function (e) { e.stopPropagation(); openPlay(); });
     invTab.addEventListener('click', function (e) { e.stopPropagation(); openInv(); });
     marketTab.addEventListener('click', function (e) { e.stopPropagation(); openMarket(); });
+    loadoutTab.addEventListener('click', function (e) { e.stopPropagation(); openLoadout(); });
+    loadoutClose.addEventListener('click', function () { showHome(); });
     closeBtn.addEventListener('click', function () { showHome(); });
     marketClose.addEventListener('click', function () { showHome(); });
     invClose.addEventListener('click', function () { showHome(); });
