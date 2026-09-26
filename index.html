@@ -831,6 +831,86 @@ window.__cs2UiScale = function () {
   }
   #coins i { width: 21px; height: 21px; font-size: 14px; margin-left: 3px; }
 
+  /* account panel: username + password (+ confirm) register/login; the
+     currency is "Tokens" (the renamed Coins) */
+  #authpanel { margin-top: 10px; padding: 12px 14px; border: 1px solid rgba(255,255,255,0.08); border-radius: 6px;
+    background: rgba(13,17,22,0.85); width: 240px; font-size: 13px; box-sizing: border-box; }
+  #authpanel .ap-head { font-family: 'Stratum2 Bold TF', 'Stratum2'; font-size: 12px; letter-spacing: 2px;
+    color: #9aa4b0; margin-bottom: 8px; }
+  #authpanel input { width: 100%; box-sizing: border-box; margin-bottom: 6px; padding: 7px 9px;
+    border: 1px solid rgba(255,255,255,0.14); border-radius: 4px; background: rgba(255,255,255,0.06);
+    color: #fff; font: inherit; outline: none; }
+  #authpanel input:focus { border-color: rgba(255,255,255,0.4); }
+  #authpanel .ap-row { display: flex; gap: 8px; }
+  #authpanel button { flex: 1; padding: 7px 0; border: 1px solid rgba(255,255,255,0.16); border-radius: 4px;
+    background: rgba(255,255,255,0.08); color: #fff; font-family: 'Stratum2 Bold TF', 'Stratum2';
+    font-size: 12px; letter-spacing: 1px; cursor: pointer; }
+  #authpanel button:hover { background: rgba(255,255,255,0.18); }
+  #authpanel .ap-logout { display: none; width: 100%; margin-top: 2px; }
+  #authpanel.in .ap-cred { display: none; }
+  #authpanel.in .ap-logout { display: block; }
+  #authpanel .ap-status { margin-top: 8px; min-height: 14px; color: #e2c46a; font-size: 12px; word-break: break-word; }
+
+  /* login gate: shown over the menu when entering the game without an account */
+  #authgate { position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.65); z-index: 900; font-family: 'Stratum2', 'Stratum2 TF', sans-serif; }
+  #authgate.show { display: flex; }
+  #authgate .ag-box { width: 340px; padding: 24px 26px; border: 1px solid rgba(255,255,255,0.12); border-radius: 8px;
+    background: rgba(13,17,22,0.96); color: #fff; }
+  #authgate .ag-head { font-family: 'Stratum2 Bold TF', 'Stratum2'; font-size: 20px; letter-spacing: 1px; margin-bottom: 6px; }
+  #authgate .ag-sub { font-size: 12.5px; color: #9aa4b0; margin-bottom: 14px; line-height: 1.45; }
+  #authgate input { width: 100%; box-sizing: border-box; margin-bottom: 8px; padding: 9px 11px;
+    border: 1px solid rgba(255,255,255,0.14); border-radius: 4px; background: rgba(255,255,255,0.06);
+    color: #fff; font: inherit; outline: none; }
+  #authgate input:focus { border-color: rgba(255,255,255,0.4); }
+  #authgate .ag-main { width: 100%; padding: 10px 0; margin: 4px 0 10px; border: 0; border-radius: 4px;
+    background: #4f9c3a; color: #fff; font-family: 'Stratum2 Bold TF', 'Stratum2'; font-size: 14px;
+    letter-spacing: 1px; cursor: pointer; }
+  #authgate .ag-main:hover { background: #5cb044; }
+  #authgate .ag-alt { font-size: 12.5px; color: #9aa4b0; margin-bottom: 8px; }
+  #authgate .ag-alt a { color: #e2c46a; cursor: pointer; text-decoration: underline; }
+  #authgate .ag-status { min-height: 14px; color: #e2c46a; font-size: 12.5px; }
+
+  /* marketplace tab (server-authoritative economy) */
+  #tab-market .pagetitle { margin: 18px 0 8px; }
+  #mkwrap { max-width: 980px; margin: 0 auto; padding: 0 24px 60px; }
+  .mk-sec { font-family: 'Stratum2 Bold TF', 'Stratum2'; font-size: 15px; letter-spacing: 1.5px; color: #9aa4b0;
+    margin: 22px 0 10px; }
+  .mk-sec b { color: #e2c46a; }
+  .mk-shop { display: flex; gap: 14px; flex-wrap: wrap; }
+  .mk-card { width: 200px; padding: 12px; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px;
+    background: rgba(10,13,16,0.8); color: #fff; text-align: center; }
+  .mk-card[data-crate] { cursor: pointer; transition: border-color 0.12s; }
+  .mk-card[data-crate]:hover { border-color: rgba(226,196,106,0.55); }
+  .mk-card img { width: 110px; height: 82px; object-fit: contain; display: block; margin: 4px auto 8px; }
+  .mk-card .mk-name { font-family: 'stratum2 condensed', 'Stratum2'; font-size: 17px; margin-bottom: 8px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mk-card .mk-buy { width: 100%; padding: 7px 0; border: 1px solid rgba(226,196,106,0.45); border-radius: 4px;
+    background: rgba(226,196,106,0.12); color: #e2c46a; font-family: 'Stratum2 Bold TF', 'Stratum2';
+    font-size: 12.5px; letter-spacing: 1px; cursor: pointer; }
+  .mk-card .mk-buy:hover { background: rgba(226,196,106,0.28); color: #fff; }
+  .mk-card .mk-own { margin-top: 7px; font-size: 11.5px; color: #7d8894; }
+  .mk-note { margin-top: 10px; font-size: 13px; color: #c9d2da; }
+  .mk-keys { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  .mk-keycard { width: 130px; padding: 10px; border: 1px solid rgba(255,255,255,0.14); border-radius: 6px;
+    background: rgba(10,13,16,0.8); color: #cfd6dc; text-align: center; font-size: 12px; cursor: pointer; }
+  .mk-keycard img { width: 64px; height: 48px; object-fit: contain; display: block; margin: 0 auto 6px; }
+  .mk-keycard.sel { border-color: #e2c46a; background: rgba(226,196,106,0.1); }
+  .mk-reveal { margin-top: 14px; padding: 22px; border: 1px solid rgba(226,196,106,0.5); border-radius: 8px;
+    background: radial-gradient(circle at 50% 30%, rgba(226,196,106,0.14), rgba(10,13,16,0.9)); text-align: center; }
+  .mk-reveal.knife { border-color: rgba(255,110,90,0.65); }
+  .mk-reveal.dup { border-color: rgba(150,150,150,0.4); }
+  .mk-rlab { font-family: 'Stratum2 Bold TF', 'Stratum2'; font-size: 13px; letter-spacing: 2px; color: #9aa4b0; }
+  .mk-reveal.knife .mk-rlab { color: #ff7a64; }
+  .mk-rname { font-family: 'stratum2 condensed', 'Stratum2'; font-size: 30px; color: #fff; margin: 6px 0 2px; }
+  .mk-rid { font-family: 'Stratum2 Mono'; font-size: 12px; color: #7d8894; }
+  .mk-stat { font-size: 13.5px; color: #c9d2da; margin-bottom: 10px; }
+  .mk-stat b { color: #e2c46a; }
+  .mk-skins { display: flex; flex-wrap: wrap; gap: 6px; }
+  .mk-skin { padding: 4px 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;
+    background: rgba(10,13,16,0.8); font-size: 12px; color: #cfd6dc; }
+  .mk-skin.none { color: #7d8894; }
+
   .tabpage { position: absolute; inset: 92px 0 0 0; display: none; }
   .tabpage.sel { display: block; }
   #tab-cases { overflow-y: auto; padding-bottom: 40px; }

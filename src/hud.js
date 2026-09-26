@@ -8,6 +8,7 @@ import { a as ct, n as ft, s as ht, t as gt } from "./data-BdgATJBp.js";
 import { applySniperWidth, buildCrosshair, updateCrosshair, xhairHitEnabled } from "./pcrossair.js";
 import { A as t, A as mmCyl, H as mmGroup, Ht as mmVec, it as mmBasic, kt as mmSphere, rt as mmMesh, ct as mmStdMat } from "./three-B50Y55N1.js";
 import { initMultiplayer, requestMatch } from "./netcode.js";
+import { MARKET_CASES, UNIKEY, MARKET_PRICE } from "./marketplace.js";
 import { onGameShot } from "./pviewmodel.js";
 import { rayPointDist, WS_BASE } from "./shared.js";
 import { $m, Ar, Av, Ba, Bm, Cr, Cs, Cv, Dr, Dv, Er, Ev, Fm, Fu, Gm, H, Iu, Km, Lu, Mo, Mu, Mv, Nm, Nu, Ov, Pu, Qg, Ru, Sv, Tm, Tr, Tv, Um, V, V_, Va, Xm, Z, __p_KGFS_MAIN_STR, __p_V5bL_array, __p_nino_bufferToString, _s, as, br, bv, eh, gs, ju, jv, kr, ku, kv, ps, qm, th, wm, wv, xr, xv, yr, ys, zm } from "./main.js";
@@ -223,7 +224,7 @@ var Nv = class e {
         for (let e of this["menuEl"]["querySelectorAll"](__p_KGFS_MAIN_STR(0x1306f, 0xa))) {
           e["classList"]["remove"]("sel")
         }
-        this["menuEl"]["querySelector"]("#tab-" + e["target"]["dataset"]["tab"])["classList"]["add"]("sel"), this["menuEl"]["dataset"]["tab"] = e["target"]["dataset"]["tab"], this["game"]["_syncPreviewBody"](), e["target"]["dataset"]["tab"] === "locker" && this["renderLocker"](), e["target"]["dataset"]["tab"] === "loadout" && this["renderLoadout"](), this["game"]["audio"]["play"]("uiclick")
+        this["menuEl"]["querySelector"]("#tab-" + e["target"]["dataset"]["tab"])["classList"]["add"]("sel"), this["menuEl"]["dataset"]["tab"] = e["target"]["dataset"]["tab"], this["game"]["_syncPreviewBody"](), e["target"]["dataset"]["tab"] === "locker" && this["renderLocker"](), e["target"]["dataset"]["tab"] === "loadout" && this["renderLoadout"](), e["target"]["dataset"]["tab"] === "market" && this["renderMarket"](), this["game"]["audio"]["play"]("uiclick")
       }
     }), this["menuEl"]["querySelector"](__p_KGFS_MAIN_STR(0x1307b, 0xa))["addEventListener"]("click", e => {
       function __p_mRco_STR_68_decode(str) {
@@ -729,7 +730,7 @@ var Nv = class e {
   } ["refreshMenuChrome"]() {
     let e = this["playerName"]();
     let t = H["load"]()["stats"]["rating"] == null ? 0x3e8 : H["load"]()["stats"]["rating"];
-    this["menuEl"]["querySelector"](__p_KGFS_MAIN_STR(0x13473, 0xa))["innerHTML"] = "" + e + __p_KGFS_MAIN_STR(0x1347f, 0x1e) + V_(t) + " \xB7 " + t + __p_KGFS_MAIN_STR(0xe0d5, 0x9), this["menuEl"]["querySelector"](__p_KGFS_MAIN_STR(0x134a1, 0x8))["innerHTML"] = "" + H["coins"] + __p_KGFS_MAIN_STR(0x134ac, 0xb), this["menuEl"]["querySelector"](__p_KGFS_MAIN_STR(0x134bb, 0xb))["textContent"] = e, this["menuEl"]["querySelector"](__p_KGFS_MAIN_STR(0x134cd, 0x9))["textContent"] = "" + (0x564 + new Date()["getMinutes"]() * 0x7 % 0xdc) + __p_KGFS_MAIN_STR(0x134d9, 0x13);
+    this["menuEl"]["querySelector"](__p_KGFS_MAIN_STR(0x13473, 0xa))["innerHTML"] = "" + e + __p_KGFS_MAIN_STR(0x1347f, 0x1e) + V_(t) + " \xB7 " + t + __p_KGFS_MAIN_STR(0xe0d5, 0x9), this["menuEl"]["querySelector"](__p_KGFS_MAIN_STR(0x134a1, 0x8))["innerHTML"] = "" + (this["_inv"] ? this["_inv"]["tokens"] : 0x0) + " <i>T</i>", this["menuEl"]["querySelector"](__p_KGFS_MAIN_STR(0x134bb, 0xb))["textContent"] = e, this["menuEl"]["querySelector"](__p_KGFS_MAIN_STR(0x134cd, 0x9))["textContent"] = "" + (0x564 + new Date()["getMinutes"]() * 0x7 % 0xdc) + __p_KGFS_MAIN_STR(0x134d9, 0x13);
     let n = H["load"]()["stats"];
     this["menuEl"]["querySelector"](__p_KGFS_MAIN_STR(0x134ee, 0xd))["innerHTML"] = [
       [__p_KGFS_MAIN_STR(0x13500, 0xf), Math["min"](0x3, n["games"] || 0x0), 0x3],
@@ -845,6 +846,11 @@ var Nv = class e {
       return
     }
     let t = H["openCase"](e);
+    // server-backed economy: case opens happen in the MARKETPLACE tab
+    if (!t) {
+      this["game"]["audio"]["play"]("denied"), this["announce"]("OPEN CASES IN THE MARKETPLACE TAB - BUY A CASE + UNIVERSAL KEY THERE", 0xfa0);
+      return
+    }
     let n = t["skin"];
     let r = t["item"];
     this["_lastCase"] = e, this["refreshMenuChrome"]();
@@ -1041,7 +1047,7 @@ var Nv = class e {
         H["equip"](r["uid"]), this["game"]["syncOwnKnife"] && this["game"]["syncOwnKnife"](), this["game"]["audio"]["play"]("buy"), c["textContent"] = "EQUIPPED", c["disabled"] = !0x0
       };
       let u = this["menuEl"]["querySelector"](__p_AmUw_STR_73(0x14142, 0xb));
-      u["disabled"] = H["coins"] < e["price"], u["textContent"] = __p_AmUw_STR_73(0x14153, 0x12) + e["price"] + " C", this["game"]["audio"]["play"](n["rarity"] === "gold" || n["rarity"] === "covert" ? "win_round" : "buy")
+      u["disabled"] = H["coins"] < e["price"], u["textContent"] = __p_AmUw_STR_73(0x14153, 0x12) + e["price"] + " T", this["game"]["audio"]["play"](n["rarity"] === "gold" || n["rarity"] === "covert" ? "win_round" : "buy")
     };
     let ce = () => {
       if (!m()) {
@@ -1796,6 +1802,12 @@ var Nv = class e {
         } catch {}
         return
       }
+      // entering the game requires an account: show the register/login
+      // overlay, then resume this click automatically after a successful login
+      if (!this["_inv"]) {
+        this["_requireAuth"](() => goBtn.click());
+        return
+      }
       click(), H["addStat"]("games");
       let e = parseInt(read("clutcher_botcount", "10")) || 0;
       let t = parseInt(read("clutcher_diff", "2")) || 0;
@@ -1857,6 +1869,33 @@ var Nv = class e {
     nameIn.addEventListener("input", () => {
       store("clutcher_name", nameIn.value), this["refreshMenuChrome"]()
     });
+
+    // ---- account (auth): username + password (+ confirm) register/login.
+    // The bearer token persists in localStorage, so the browser stays logged
+    // in from that point on; /auth/me revalidates it on every menu build.
+    this["_authInit"]();
+
+    // ---- marketplace tab: the middle nav button opens the server-backed
+    // economy (3 cases + Universal Key, 10 tokens each, server-side rolls)
+    try {
+      let mb = this["menuEl"].querySelector('[data-tab="market"]');
+      mb && (mb.textContent = "MARKET");
+      let pg = document.createElement("div");
+      pg.id = "tab-market", pg.className = "tabpage";
+      pg.innerHTML = '<h2 class="pagetitle">MARKETPLACE</h2><div id="mkwrap"></div>';
+      this["menuEl"].appendChild(pg);
+    } catch {}
+
+    // ---- currency rename: the obfuscated string table renders the currency
+    // as a "C" glyph (<i>C</i>) in several menu surfaces; rewrite every one
+    // of them to T (Tokens), present and future, with a mutation observer
+    try {
+      new MutationObserver(() => {
+        this["menuEl"] && this["menuEl"].querySelectorAll("i").forEach(el => {
+          el.textContent === "C" && (el.textContent = "T")
+        })
+      }).observe(this["menuEl"], { childList: !0, subtree: !0 })
+    } catch {}
 
     // ---- settings: sensitivity (CS2 scale) + zoom sensitivity
     let sens = q("#mmSens"), sensVal = q("#mmSensVal");
@@ -2357,6 +2396,266 @@ var Nv = class e {
       net.sendHit(best, dmg, { ox: mmPos.x, oy: mmPos.y, oz: mmPos.z, dx: mmDir.x, dy: mmDir.y, dz: mmDir.z })
     };
     return self["_mmNet"]
+  } ["_authInit"]() {
+    // account panel: register/login with username + password + confirm
+    // password (no email). On success the bearer token is kept in localStorage
+    // so the browser stays logged in; tokens = the account currency.
+    const API = WS_BASE.replace("wss://", "https://");
+    const LS = "clutcher_auth_token";
+    let panel = document.createElement("div");
+    panel.id = "authpanel";
+    panel.innerHTML = '<div class="ap-head">ACCOUNT</div>'
+      + '<div class="ap-cred">'
+      + '<input id="apUser" maxlength="20" placeholder="Username" autocomplete="off" spellcheck="false">'
+      + '<input id="apPass" type="password" placeholder="Password">'
+      + '<input id="apPass2" type="password" placeholder="Confirm password">'
+      + '<div class="ap-row"><button id="apLogin" type="button">LOG IN</button><button id="apRegister" type="button">REGISTER</button></div>'
+      + '</div>'
+      + '<button id="apLogout" type="button" class="ap-logout">LOG OUT</button>'
+      + '<div class="ap-status" id="apStatus"></div>';
+    let host = document.getElementById("mmName");
+    (host && host.parentElement ? host.parentElement : this["menuEl"]).appendChild(panel);
+    let ui = panel.querySelector("#apUser"), pi = panel.querySelector("#apPass"), p2 = panel.querySelector("#apPass2");
+    let st = panel.querySelector("#apStatus");
+    let getToken = () => {
+      try { return localStorage.getItem(LS) || "" } catch { return "" }
+    };
+    let setToken = t => {
+      try { t ? localStorage.setItem(LS, t) : localStorage.removeItem(LS) } catch {}
+    };
+    let showForm = msg => {
+      panel.classList.remove("in"), st.textContent = msg || ""
+    };
+    let showIn = u => {
+      panel.classList.add("in"), st.textContent = "LOGGED IN AS " + u.username + " \u00b7 TOKENS " + u.tokens
+    };
+    let call = async (path, opts) => {
+      let r = await fetch(API + path, opts), j = null;
+      try { j = await r.json() } catch {}
+      return { ok: r.ok, j }
+    };
+    let authed = () => ({ headers: { Authorization: "Bearer " + getToken() } });
+    let creds = () => JSON.stringify({ username: ui.value.trim(), password: pi.value, confirm: p2.value });
+    let post = path => async () => {
+      st.textContent = "...";
+      let r = await call(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: creds() });
+      if (r.ok && r.j && r.j.token) {
+        setToken(r.j.token), showIn({ username: r.j.inv ? r.j.inv.username : r.j.username, tokens: r.j.inv ? r.j.inv.tokens : 0 });
+        this["_loadInv"]();
+        try { console.log("[auth] ok") } catch {}
+      } else {
+        showForm("FAILED: " + (r.j && r.j.error || "no response"));
+      }
+    };
+    panel.querySelector("#apLogin").onclick = post("/auth/login");
+    panel.querySelector("#apRegister").onclick = post("/auth/register");
+    panel.querySelector("#apLogout").onclick = async () => {
+      try { await call("/auth/logout", { method: "POST", headers: { Authorization: "Bearer " + getToken() } }) } catch {}
+      setToken(""), this["_inv"] = null, H["__server"] = !0x1, showForm("LOGGED OUT"), this["_syncMenuTokens"]()
+    };
+    // stay logged in: resume an existing session if the token is still valid
+    if (getToken()) {
+      call("/auth/me", authed()).then(({ ok, j }) => {
+        if (ok && j && j.user) {
+          showIn(j.user), this["_loadInv"]()
+        } else setToken("");
+      })["catch"](() => {})
+    }
+  } ["_authToken"]() {
+    try {
+      return localStorage.getItem("clutcher_auth_token") || ""
+    } catch {
+      return ""
+    }
+  } ["_loadInv"]() {
+    // pull the authoritative inventory and hydrate the in-memory economy view
+    let API = WS_BASE.replace("wss://", "https://");
+    return fetch(API + "/api/inventory", { headers: { Authorization: "Bearer " + this["_authToken"]() } })
+      .then(r => r.ok ? r.json() : null).then(j => {
+        if (j && j.inv) {
+          this["_inv"] = j.inv, H["hydrateServer"](j.inv), this["_wireEquipSync"](), this["_syncMenuTokens"]();
+        }
+        return j && j.inv || null
+      })["catch"](() => null)
+  } ["_wireEquipSync"]() {
+    // H.save() is a no-op in server mode; equips go to the server instead
+    // (the server validates every skin is actually owned before storing it)
+    if (this["_equipWired"]) {
+      return
+    }
+    this["_equipWired"] = !0x0;
+    let t = null;
+    H["save"] = () => {
+      clearTimeout(t);
+      t = setTimeout(() => {
+        let eq = {};
+        for (let [w, uid] of Object.entries(H["data"]["equipped"] || {})) {
+          let it = H["item"](uid);
+          it && (eq[w] = it["skin"])
+        }
+        fetch(WS_BASE.replace("wss://", "https://") + "/api/equip", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: "Bearer " + this["_authToken"]() },
+          body: JSON.stringify({ equipped: eq })
+        })["catch"](() => {})
+      }, 400)
+    };
+  } ["_syncMenuTokens"]() {
+    try {
+      let el = this["menuEl"] && this["menuEl"].querySelector("#coins");
+      el && (el.innerHTML = "" + (this["_inv"] ? this["_inv"]["tokens"] : 0x0) + " <i>T</i>")
+    } catch {}
+  } ["_requireAuth"](t) {
+    // entering the game requires an account: register/login overlay over the
+    // menu background; the interrupted action resumes after a successful login
+    this["_authResume"] = t;
+    let ov = document.getElementById("authgate");
+    if (ov) {
+      ov.classList.add("show");
+      return
+    }
+    ov = document.createElement("div");
+    ov.id = "authgate";
+    ov.innerHTML = '<div class="ag-box"><div class="ag-head" id="agHead">CREATE YOUR ACCOUNT</div>'
+      + '<div class="ag-sub">Playing requires an account. Register with a username and password - no email needed.</div>'
+      + '<input id="agUser" maxlength="20" placeholder="Username" autocomplete="off" spellcheck="false">'
+      + '<input id="agPass" type="password" placeholder="Password">'
+      + '<input id="agPass2" type="password" placeholder="Confirm password">'
+      + '<button id="agGo" type="button" class="ag-main">REGISTER &amp; PLAY</button>'
+      + '<div class="ag-alt" id="agAlt">Have an account? <a id="agSwitch">Login here</a></div>'
+      + '<div class="ag-status" id="agStatus"></div></div>';
+    document.body.appendChild(ov);
+    let ui = ov.querySelector("#agUser"), pi = ov.querySelector("#agPass"), p2 = ov.querySelector("#agPass2");
+    let st = ov.querySelector("#agStatus");
+    let mode = "register";
+    let setMode = m => {
+      mode = m;
+      ov.querySelector("#agHead").textContent = m === "register" ? "CREATE YOUR ACCOUNT" : "LOGIN";
+      ov.querySelector("#agGo").textContent = m === "register" ? "REGISTER & PLAY" : "LOGIN & PLAY";
+      ov.querySelector("#agAlt").innerHTML = m === "register" ? 'Have an account? <a id="agSwitch">Login here</a>' : 'No account yet? <a id="agSwitch">Register here</a>';
+      ov.querySelector("#agSwitch").onclick = () => setMode(mode === "register" ? "login" : "register");
+      st.textContent = "";
+    };
+    ov.querySelector("#agSwitch").onclick = () => setMode("login");
+    let submit = async () => {
+      st.textContent = "...";
+      let r = await fetch(WS_BASE.replace("wss://", "https://") + "/auth/" + mode, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: ui.value.trim(), password: pi.value, confirm: p2.value })
+      });
+      let j = null;
+      try { j = await r.json() } catch {}
+      if (r.ok && j && j.token) {
+        try { localStorage.setItem("clutcher_auth_token", j.token) } catch {}
+        ov.classList.remove("show"), st.textContent = "";
+        await this["_loadInv"]();
+        let f = this["_authResume"];
+        this["_authResume"] = null;
+        f && f();
+      } else st.textContent = "FAILED: " + (j && j.error || "no response");
+    };
+    ov.querySelector("#agGo").onclick = submit;
+  } ["_marketApi"](path, body) {
+    return fetch(WS_BASE.replace("wss://", "https://") + path, {
+      method: body ? "POST" : "GET",
+      headers: Object.assign({ "Content-Type": "application/json" }, this["_inv"] ? { Authorization: "Bearer " + this["_authToken"]() } : {}),
+      body: body ? JSON.stringify(body) : undefined
+    }).then(r => r.json().then(j => ({ ok: r.ok, j })))
+  } ["_marketBuy"](item) {
+    this["_marketApi"]("/api/market/buy", { item }).then(({ ok, j }) => {
+      if (ok && j && j.inv) {
+        this["_inv"] = j.inv, H["hydrateServer"](j.inv), this["renderMarket"](), this["_syncMenuTokens"](), this["game"]["audio"]["play"]("buy");
+      } else {
+        this["game"]["audio"]["play"]("denied");
+        let n = this["menuEl"].querySelector("#mknote");
+        n && (n.textContent = j && j.error === "not_enough_tokens" ? "NOT ENOUGH TOKENS" : "PURCHASE FAILED");
+      }
+    })["catch"](() => {})
+  } ["_marketOpenFlow"](crate) {
+    let box = this["menuEl"].querySelector("#mkopen");
+    if (!box) return;
+    let inv = this["_inv"];
+    if (!inv) {
+      box.innerHTML = '<div class="mk-note">Log in first.</div>';
+      return
+    }
+    if (((inv.cases || {})[crate] || 0) < 1) {
+      box.innerHTML = '<div class="mk-note">You do not own this case - buy it above.</div>';
+      return
+    }
+    if ((inv.keys || 0) < 1) {
+      box.innerHTML = '<div class="mk-note">Opening a case consumes one <b>Universal Key</b> - buy one above.</div>';
+      return
+    }
+    // key-select page: pick which Universal Key to spend (they are identical,
+    // but the spend is explicit - then the SERVER rolls the reward)
+    let keys = [];
+    for (let i = 0; i < inv.keys; i++) {
+      keys.push('<div class="mk-keycard' + (i ? "" : " sel") + '" data-k="' + i + '"><img src="' + UNIKEY.icon + '" alt=""><div>Universal Key</div></div>')
+    }
+    let def = MARKET_CASES.find(c => c.id === crate) || { name: crate };
+    box.innerHTML = '<div class="mk-sec">OPEN ' + def.name.toUpperCase() + ' - SELECT A KEY</div><div class="mk-keys">' + keys.join("") + '</div><button id="mkdoopen" class="mk-buy">OPEN CASE</button><div class="mk-note" id="mknote"></div>';
+    box.querySelectorAll(".mk-keycard").forEach(k => {
+      k.onclick = () => {
+        box.querySelectorAll(".mk-keycard").forEach(x => x.classList.remove("sel")), k.classList.add("sel")
+      }
+    });
+    box.querySelector("#mkdoopen").onclick = async () => {
+      let btn = box.querySelector("#mkdoopen");
+      btn.disabled = !0, btn.textContent = "ROLLING...";
+      let { ok, j } = await this["_marketApi"]("/api/case/open", { crate });
+      if (ok && j && j.inv) {
+        this["_inv"] = j.inv, H["hydrateServer"](j.inv), this["_syncMenuTokens"](), this["renderMarket"]();
+        let rb = this["menuEl"].querySelector("#mkopen");
+        let r = j.reward, d = ps[r.id];
+        rb.innerHTML = '<div class="mk-reveal' + (r.knife ? " knife" : "") + (r.duplicate ? " dup" : "") + '">'
+          + '<div class="mk-rlab">' + (r.duplicate ? "DUPLICATE - " + j.refund + " TOKENS BACK" : r.knife ? "RARE KNIFE!" : "YOU GOT") + '</div>'
+          + '<div class="mk-rname">' + (d && d.name || r.id) + '</div>'
+          + '<div class="mk-rid">' + r.id + '</div></div>'
+          + '<div class="mk-note">Tokens: ' + j.inv.tokens + ' &middot; Keys: ' + j.inv.keys + ' &middot; Cases left: ' + ((j.inv.cases || {})[crate] || 0) + '</div>';
+        this["game"]["audio"]["play"](r.knife ? "win_round" : "buy");
+      } else {
+        btn.disabled = !0x1, btn.textContent = "OPEN CASE";
+        let n = box.querySelector("#mknote");
+        n && (n.textContent = "FAILED: " + (j && j.error || "no response"));
+      }
+    };
+  } ["renderMarket"]() {
+    let w = this["menuEl"].querySelector("#mkwrap");
+    if (!w) return;
+    let inv = this["_inv"];
+    let rows = "";
+    rows += '<div class="mk-sec">BUY - <b>' + MARKET_PRICE + ' TOKENS</b> EACH</div><div class="mk-shop">';
+    for (let c of MARKET_CASES) {
+      rows += '<div class="mk-card" data-crate="' + c.id + '"><img src="' + c.icon + '" alt=""><div class="mk-name">' + c.name + '</div><button class="mk-buy" data-buy="case:' + c.id + '">BUY ' + MARKET_PRICE + ' T</button><div class="mk-own">' + ((inv && inv.cases && inv.cases[c.id]) || 0) + ' owned - click to open</div></div>'
+    }
+    rows += '<div class="mk-card key"><img src="' + UNIKEY.icon + '" alt=""><div class="mk-name">' + UNIKEY.name + '</div><button class="mk-buy" data-buy="key">BUY ' + MARKET_PRICE + ' T</button><div class="mk-own">' + ((inv && inv.keys) || 0) + ' owned</div></div></div>';
+    rows += '<div id="mkopen"></div>';
+    if (inv) {
+      let owned = inv.items || [];
+      let caseCount = 0;
+      for (let k of Object.values(inv.cases || {})) caseCount += k;
+      rows += '<div class="mk-sec">YOUR INVENTORY</div><div class="mk-inv">'
+        + '<div class="mk-stat">TOKENS: <b>' + inv.tokens + '</b> &middot; UNIVERSAL KEYS: <b>' + inv.keys + '</b> &middot; CASES: <b>' + caseCount + '</b> &middot; SKINS: <b>' + owned.length + '</b></div>'
+        + '<div class="mk-skins">' + (owned.length ? owned.map(id => {
+          let d = ps[id];
+          return '<span class="mk-skin">' + (d && d.name || id) + '</span>'
+        }).join("") : '<span class="mk-skin none">No skins yet - buy a case and a Universal Key, then open it.</span>') + '</div></div>';
+    } else {
+      rows += '<div class="mk-sec">LOG IN TO SEE YOUR INVENTORY</div>';
+    }
+    w.innerHTML = rows;
+    w.querySelectorAll(".mk-buy").forEach(b => {
+      b.onclick = ev => {
+        ev.stopPropagation(), this["_marketBuy"](b.dataset.buy)
+      }
+    });
+    w.querySelectorAll(".mk-card[data-crate]").forEach(card => {
+      card.onclick = ev => {
+        ev.target.closest(".mk-buy") || this["_marketOpenFlow"](card.dataset.crate)
+      }
+    });
   } ["showPause"]() {
     this["buyOpen"] || (this["_renderPauseKeys"](), this["_lockNotice"](), this["pauseEl"]["style"]["display"] = "flex", this["pauseOpen"] = !0x0)
   } ["hidePause"]() {

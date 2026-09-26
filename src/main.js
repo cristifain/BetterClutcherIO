@@ -14683,7 +14683,14 @@ function bs(e, t) {
 var xs = "clutcher_inv_v1";
 var H = {
   ["data"]: null,
+  ["__server"]: !0x1,
   ["load"]() {
+    // server-backed mode: the economy lives in D1 (see _server/schema.sql);
+    // hud.js hydrates `data` from the authoritative inventory and all local
+    // persistence stops - this view is display-only.
+    if (this["__server"]) {
+      return this["data"]
+    }
     if (this["data"]) {
       return this["data"]
     }
@@ -14738,9 +14745,46 @@ var H = {
     return this["data"]
   },
   ["save"]() {
+    // server-backed: no localStorage writes - hud.js syncs equips to the server
+    if (this["__server"]) {
+      return
+    }
     try {
       localStorage["setItem"](xs, JSON["stringify"](this["data"]))
     } catch {}
+  },
+  ["hydrateServer"](e) {
+    // rebuild the in-memory view from the authoritative server inventory:
+    // e = { tokens, items: [finishId...], equipped: {weapon: finishId}, cases, keys }
+    let items = [];
+    let byId = {};
+    for (let id of e.items || []) {
+      let t = ps[id];
+      if (!t) {
+        continue
+      }
+      let n = rs(t, {
+        ["wear"]: (t["wmin"] + t["wmax"]) / 0x2,
+        ["st"]: !0x1,
+        ["seed"]: 0x0
+      });
+      items.push(n), byId[id] = n
+    }
+    let equipped = {};
+    for (let [t, n] of Object["entries"](e.equipped || {})) {
+      byId[n] && (equipped[t] = byId[n]["uid"])
+    }
+    this["__server"] = !0x0;
+    this["data"] = {
+      ["coins"]: e.tokens || 0x0,
+      ["tokens"]: e.tokens || 0x0,
+      ["items"]: items,
+      ["equipped"]: equipped,
+      ["stats"]: { ["games"]: 0x0, ["kills"]: 0x0, ["wins"]: 0x0 },
+      ["cases"]: e.cases || {},
+      ["keys"]: e.keys || 0x0
+    };
+    return this["data"]
   },
   get ["coins"]() {
     return this["load"]()["coins"]
@@ -14834,6 +14878,11 @@ var H = {
     t && t["st"] && (t["kills"]++, this["save"]())
   },
   ["openCase"](e) {
+    // server-backed economy: case opens happen through POST /api/case/open
+    // (the server rolls and grants) - the old client-side roll is disabled
+    if (this["__server"]) {
+      return null
+    }
     let t = this["load"]();
     if (t["coins"] < e["price"]) {
       return null
