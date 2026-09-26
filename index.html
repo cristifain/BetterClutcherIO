@@ -638,6 +638,15 @@ window.__cs2UiScale = function () {
   .bm-item.cant .bm-icon { background: #474747; }
   .bm-item.cant .bm-price, .bm-item.cant .bm-item-name { color: #808080; }
   .bm-item.own { border-color: rgba(255,255,255,0.85); }
+  /* CS2-style revert icon: red circle at the row's left edge, shown only on
+     items bought this round (hud toggles .hasref) */
+  .bm-item .bm-ref { position: absolute; left: -14px; top: 50%; transform: translateY(-50%);
+    width: 28px; height: 28px; border-radius: 50%; border: 0; padding: 0; cursor: pointer; z-index: 3;
+    display: none; align-items: center; justify-content: center; color: #fff; background: #b0342e;
+    box-shadow: 0 0 0 2px rgba(0,0,0,0.55); transition: background 0.12s; }
+  .bm-item .bm-ref:hover { background: #d14037; }
+  .bm-item .bm-ref svg { width: 15px; height: 15px; display: block; }
+  .bm-item.hasref .bm-ref { display: flex; }
   .bm-ground { position: relative; margin-top: 8px; min-width: 0; min-height: 150px; box-sizing: border-box; padding: 10px 14px;
     background: rgba(26,26,26,0.78); }
   .bm-ground-title { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none;

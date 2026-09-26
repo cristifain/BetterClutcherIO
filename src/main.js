@@ -31633,6 +31633,94 @@ window["game"] = new class {
       return this["deny"](__p_KGFS_MAIN_STR(0x1cd2e, 0x15))
     }
     this["audio"]["play"]("buy"), this["hud"]["updateMoney"](), this["hud"]["updateWeapon"](), this["hud"]["updateHealth"]()
+  } ["canRefundItem"](e) {
+    // CS2-style per-item refund eligibility: bought THIS round (not thrown)
+    // and still owned in its purchased state (guns must be in their slot,
+    // grenades unthrown, armor/kit still active). Drives the buy-menu icon.
+    if (!this["modeCtl"] || !this["modeCtl"]["buyTimeOk"]()) {
+      return !0x1
+    }
+    let t = this["_roundBuys"] || [];
+    let n = !0x1;
+    for (let r = t["length"] - 0x1; r >= 0x0; r--) {
+      if (t[r]["id"] === e && !t[r]["thrown"]) {
+        n = !0x0;
+        break
+      }
+    }
+    if (!n) {
+      return !0x1
+    }
+    let r = Mo[e];
+    let i = V[e];
+    if (r) {
+      return e === "defkit" ? !!this["modeCtl"]["playerKit"] : this["player"]["armor"] > 0x0
+    }
+    if (!i) {
+      return !0x1
+    }
+    if (i["class"] === "grenade") {
+      let t = this["weapons"]["grenades"]["find"](t => {
+        return t["id"] === e
+      });
+      return !!t && t["count"] > 0x0
+    }
+    if (i["class"] === "zeus") {
+      return !!this["weapons"]["zeusOwned"]
+    }
+    let a = i["slot"] || (i["class"] === "pistol" ? 0x2 : 0x1);
+    return this["weapons"]["slots"][a] === e
+  } ["refundOne"](e) {
+    // revert a single purchase (the buy-menu revert icon): refunds the most
+    // recent non-thrown purchase of this item and removes it, same rules as
+    // refundAll but scoped to one entry
+    let t = this["player"];
+    if (!this["modeCtl"]) {
+      return this["deny"](__p_KGFS_MAIN_STR(0x1cd2e, 0x15))
+    }
+    if (!this["modeCtl"]["buyTimeOk"]()) {
+      return this["deny"](__p_KGFS_MAIN_STR(0x1cc3c, 0x14))
+    }
+    this["_buyLogRoll"]();
+    let n = this["_roundBuys"] || [];
+    let r = -0x1;
+    for (let i = n["length"] - 0x1; i >= 0x0; i--) {
+      if (n[i]["id"] === e && !n[i]["thrown"]) {
+        r = i;
+        break
+      }
+    }
+    if (r < 0x0) {
+      return this["deny"](__p_KGFS_MAIN_STR(0x1cd2e, 0x15))
+    }
+    let s = Mo[e];
+    let c = V[e];
+    let l = !0x1;
+    if (s) {
+      e === "defkit" ? this["modeCtl"]["playerKit"] && (this["modeCtl"]["playerKit"] = !0x1, l = !0x0) : t["armor"] > 0x0 && (t["armor"] = 0x0, t["helmet"] = !0x1, l = !0x0)
+    } else {
+      if (c && c["class"] === "grenade") {
+        let t = this["weapons"]["grenades"]["find"](t => {
+          return t["id"] === e
+        });
+        t && t["count"] > 0x0 && (t["count"]--, t["count"] || this["weapons"]["grenades"]["splice"](this["weapons"]["grenades"]["indexOf"](t), 0x1), l = !0x0)
+      } else {
+        if (c && c["class"] === "zeus") {
+          this["weapons"]["zeusOwned"] && (this["weapons"]["zeusOwned"] = !0x1, delete this["weapons"]["states"]["zeus"], l = !0x0)
+        } else {
+          if (c) {
+            let t = c["slot"] || (c["class"] === "pistol" ? 0x2 : 0x1);
+            this["weapons"]["slots"][t] === e && (this["weapons"]["slots"][t] = null, delete this["weapons"]["states"][e], l = !0x0, this["weapons"]["current"] === e && this["weapons"]["equip"](this["weapons"]["slots"][0x1] || this["weapons"]["slots"][0x2] || "knife"))
+          }
+        }
+      }
+    }
+    if (!l) {
+      return this["deny"](__p_KGFS_MAIN_STR(0x1cd2e, 0x15))
+    }
+    t["money"] = Math["min"](this["modeCtl"]["maxMoney"] || 0x3e80, t["money"] + n[r]["price"]);
+    n["splice"](r, 0x1);
+    this["audio"]["play"]("buy"), this["hud"]["updateMoney"](), this["hud"]["updateWeapon"](), this["hud"]["updateHealth"]()
   } ["pickDrop"](e) {
     let t = this["player"];
     if (!e || !this["drops"]["includes"](e) || !t["alive"]) {

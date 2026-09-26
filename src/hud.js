@@ -1431,7 +1431,7 @@ var Nv = class e {
     let i = [];
     let a = (e, t) => {
       let a = ju(e);
-      return i["push"](a), __p_KGFS_MAIN_STR(0x155f7, 0x29) + e + __p_KGFS_MAIN_STR(0x15626, 0xf) + t + __p_KGFS_MAIN_STR(0x15639, 0x23) + t + __p_KGFS_MAIN_STR(0x15662, 0x2a) + eh(e) + __p_KGFS_MAIN_STR(0x1568f, 0x37) + a + __p_KGFS_MAIN_STR(0x14488, 0xb) + n + __p_KGFS_MAIN_STR(0x14d5a, 0x8) + (r ? "" : __p_KGFS_MAIN_STR(0x156ce, 0x1e) + $m(e) + __p_KGFS_MAIN_STR(0xe0d5, 0x9)) + __p_KGFS_MAIN_STR(0x14ea4, 0xb)
+      return i["push"](a), __p_KGFS_MAIN_STR(0x155f7, 0x29) + e + __p_KGFS_MAIN_STR(0x15626, 0xf) + t + __p_KGFS_MAIN_STR(0x15639, 0x23) + t + __p_KGFS_MAIN_STR(0x15662, 0x2a) + eh(e) + __p_KGFS_MAIN_STR(0x1568f, 0x37) + a + __p_KGFS_MAIN_STR(0x14488, 0xb) + n + __p_KGFS_MAIN_STR(0x14d5a, 0x8) + (r ? "" : __p_KGFS_MAIN_STR(0x156ce, 0x1e) + $m(e) + __p_KGFS_MAIN_STR(0xe0d5, 0x9)) + (r ? "" : '<span class="bm-ref" data-id="' + e + '" title="Refund purchase"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/><path d="M3 3v5h5"/></svg></span>') + __p_KGFS_MAIN_STR(0x14ea4, 0xb)
     };
     let o = "";
     for (let e of Xm(t)) {
@@ -1455,6 +1455,13 @@ var Nv = class e {
       r = Math["min"](r, (innerWidth - n - 0x28 - .4 * innerHeight) / t, (innerHeight - 0x6e) / 0x2a8), this["buyEl"]["style"]["setProperty"]("--bms", String(Math["max"](.55, Math["min"](1.7, r)))), this["buyEl"]["style"]["setProperty"](__p_KGFS_MAIN_STR(0x15c6a, 0xb), n + "px")
     };
     c(), this["_buyWired"] || (this["_buyWired"] = !0x0, window["addEventListener"]("resize", c), this["buyEl"]["addEventListener"]("click", e => {
+      // CS2-style per-item refund: the revert icon lives INSIDE the item row,
+      // so it must be checked before the generic .bm-item buy handler
+      let f = e["target"]["closest"](".bm-ref");
+      if (f) {
+        this["game"]["refundOne"](f["dataset"]["id"]), this["refreshBuyMoney"](!0x0), this["_syncBuyPreview"]();
+        return
+      }
       let t = e["target"]["closest"](__p_KGFS_MAIN_STR(0x15c79, 0xa));
       if (t) {
         this["game"]["tryBuy"](t["dataset"]["id"], {
@@ -1553,7 +1560,9 @@ var Nv = class e {
       let o = !!r && $m(i) > n["money"];
       let s = a["class"] === "grenade" && !t["weapons"]["grenadeRoom"](i);
       let c = !0x1;
-      Mo[i] ? c = i === "defkit" ? !!(r && r["playerKit"]) : n["armor"] >= 0x64 && (i === "kevlar" || n["helmet"]) : a["class"] === "zeus" ? c = !!t["weapons"]["zeusOwned"] : a["class"] !== "grenade" && (c = t["weapons"]["slots"][a["slot"] || (a["class"] === "pistol" ? 0x2 : 0x1)] === i), e["classList"]["toggle"]("cant", o || s), e["classList"]["toggle"]("own", c)
+      Mo[i] ? c = i === "defkit" ? !!(r && r["playerKit"]) : n["armor"] >= 0x64 && (i === "kevlar" || n["helmet"]) : a["class"] === "zeus" ? c = !!t["weapons"]["zeusOwned"] : a["class"] !== "grenade" && (c = t["weapons"]["slots"][a["slot"] || (a["class"] === "pistol" ? 0x2 : 0x1)] === i), e["classList"]["toggle"]("cant", o || s), e["classList"]["toggle"]("own", c);
+      // CS2-style refund: show the revert icon only on items bought this round
+      e["classList"]["toggle"]("hasref", !!t["canRefundItem"] && t["canRefundItem"](i))
     }
     if (e || t["time"] - (this["_bmGroundT"] || -0x9) > .25) {
       this["_bmGroundT"] = t["time"];
@@ -1805,7 +1814,9 @@ var Nv = class e {
         goBtn.classList.remove("starting"), goStatus && goStatus.classList.remove("show")
       };
       if (a) {
-        Promise.resolve(game.startGame(r, e, t, i)).then(() => game.finishTeamSelect("CT")).catch(() => {
+        // practice: map load -> the team-select screen takes over and the
+        // player picks CT or T themselves (no auto-pick, same as online)
+        Promise.resolve(game.startGame(r, e, t, i)).then(() => o()).catch(() => {
           o(), toast("COULD NOT START MATCH")
         });
         return
@@ -3133,7 +3144,16 @@ var Nv = class e {
   } ["showTeamSelect"](e, t) {
     this["hideTeamSelect"]();
     let n = document["createElement"]("div");
-    n["id"] = "teamsel", n["innerHTML"] = __p_KGFS_MAIN_STR(0x18da2, 0x47) + e["toUpperCase"]() + " \u2014 " + (t === "dm" ? __p_KGFS_MAIN_STR(0x18dec, 0x13) : __p_KGFS_MAIN_STR(0x18e06, 0xe)) + __p_KGFS_MAIN_STR(0x18e17, 0x406), n["querySelectorAll"](__p_KGFS_MAIN_STR(0x1921e, 0x9))["forEach"](e => {
+    n["id"] = "teamsel", n["innerHTML"] = __p_KGFS_MAIN_STR(0x18da2, 0x47) + e["toUpperCase"]() + " \u2014 " + (t === "dm" ? __p_KGFS_MAIN_STR(0x18dec, 0x13) : __p_KGFS_MAIN_STR(0x18e06, 0xe)) + __p_KGFS_MAIN_STR(0x18e17, 0x406);
+    // deathmatch: the default card copy talks about bombsites/C4 - swap in
+    // team-deathmatch descriptions so the choice makes sense in dm mode
+    if (t === "dm") {
+      let a = n["querySelector"](".tscard.ct .tdesc");
+      let o = n["querySelector"](".tscard.t .tdesc");
+      a && (a["textContent"] = "Play the Counter-Terrorist side. Team Deathmatch: score kills for CT, instant respawns, no bomb.");
+      o && (o["textContent"] = "Play the Terrorist side. Team Deathmatch: score kills for T, instant respawns, no bomb.");
+    }
+    n["querySelectorAll"](__p_KGFS_MAIN_STR(0x1921e, 0x9))["forEach"](e => {
       e["onclick"] = () => {
         return this["game"]["finishTeamSelect"](e["dataset"]["team"])
       }
