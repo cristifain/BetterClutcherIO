@@ -2863,11 +2863,17 @@ var Nv = class e {
       return this["game"]["toMenu"]()
     }, document["body"]["appendChild"](this["_leaveBtn"]));
     this["_leaveBtn"]["style"]["display"] = "block"
+  } ["showRelockHint"]() {
+    // shown when the pause menu closes but the pointer re-lock may still be
+    // pending (browser ESC cooldown) - the next click into the game re-locks
+    this["_rh"] || (this["_rh"] = document["createElement"]("div"), this["_rh"]["id"] = "relock-hint", this["_rh"]["textContent"] = "CLICK TO RESUME", document["body"]["appendChild"](this["_rh"]));
+    this["_rh"]["style"]["display"] = "block"
   } ["hidePause"]() {
     // stamp a grace window: the pointer re-lock after ESC can be rejected by
     // the browser (ESC cooldown), and the lock-lost handlers must not
     // instantly re-open the pause menu during that attempt
     this["_resumeGrace"] = performance["now"]();
+    this["_rh"] && (this["_rh"]["style"]["display"] = "none");
     this["pauseEl"]["style"]["display"] = "none", this["pauseOpen"] = !0x1, this["closeHowTo"]();
     this["escPauseOpen"] && (this["escPauseOpen"] = !0x1, this["_mmRoot"] && this["_mmRoot"]["classList"]["remove"]("open", "ingame"), this["root"]["classList"]["remove"]("inmenu"), document["body"]["classList"]["remove"]("menuopen"), this["_leaveBtn"] && (this["_leaveBtn"]["style"]["display"] = "none"))
   } ["keyName"](e) {

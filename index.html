@@ -128,6 +128,11 @@ window.__cs2UiScale = function () {
   #menu:not(.casemode), #pause { display: none !important; }
   #menu.casemode { display: block !important; z-index: 300; background: transparent; }
   #menu.casemode > *:not(#caseopen) { display: none !important; }
+  /* shown when the pause menu closes but the pointer re-lock is pending */
+  #relock-hint { position: fixed; top: 58%; left: 50%; transform: translate(-50%, -50%); z-index: 400; display: none;
+    font-family: 'stratum2 condensed', 'Stratum2', Arial, sans-serif; font-weight: 800; font-size: 20px;
+    letter-spacing: 5px; color: #cdffc4; text-shadow: 0 0 6px #f2fff0, 0 0 18px #8dff6e, 0 0 40px rgba(61,255,61,0.6);
+    pointer-events: none; animation: mm-pulse 1.2s infinite ease-in-out; }
   /* in-game pause: the shell floats over the live game; the loadout page
      (ported from the old menu) fills its view below the 42px header */
   #menu-root.ingame .mm-bg, #menu-root.ingame .mm-bg::before { background: transparent; }

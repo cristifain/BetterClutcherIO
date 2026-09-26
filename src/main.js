@@ -2103,7 +2103,7 @@ var Sr = class {
       return e["button"] === 0x2 && e["ctrlKey"] && (e["buttons"] & 0x1) == 0x1 && !(e["buttons"] & 0x2)
     };
     document["addEventListener"]("mousedown", e => {
-      l(e), this["locked"] && (e["button"] === 0x0 || u(e) ? (this["mouse1"] = !0x0, this["mouse1Pressed"] = !0x0, this["_ctrlLeft"] = e["button"] === 0x2) : e["button"] === 0x2 && (this["mouse2"] = !0x0, this["mouse2Pressed"] = !0x0))
+      l(e), !this["locked"] && this["inMatch"]() && !this["touchMode"] && !(e["target"] && e["target"]["closest"] && e["target"]["closest"]("#menu-root,#devconsole,#pause-leave,#mmUserMenu")) && this["requestLock"](), this["locked"] && (e["button"] === 0x0 || u(e) ? (this["mouse1"] = !0x0, this["mouse1Pressed"] = !0x0, this["_ctrlLeft"] = e["button"] === 0x2) : e["button"] === 0x2 && (this["mouse2"] = !0x0, this["mouse2Pressed"] = !0x0))
     }), document["addEventListener"]("mouseup", e => {
       l(e), e["button"] === 0x0 && (this["mouse1"] && (this["mouse1Released"] = !0x0), this["mouse1"] = !0x1, this["_ctrlLeft"] = !0x1), e["button"] === 0x2 && (this["mouse1"] && (this["_ctrlLeft"] || e["ctrlKey"]) && !(e["buttons"] & 0x1) && (this["mouse1Released"] = !0x0, this["mouse1"] = !0x1, this["_ctrlLeft"] = !0x1), e["buttons"] & 0x2 || (this["mouse2"] = !0x1))
     }), document["addEventListener"]("wheel", e => {
@@ -31986,7 +31986,7 @@ window["game"] = new class {
       }
       if (this["input"]["wasPressed"]("Escape") && (!this["input"]["locked"] || this["input"]["_emulated"])) {
         let e = this["hud"]["pauseMode"] && this["hud"]["menuEl"]["querySelector"](__p_KGFS_MAIN_STR(0x13de1, 0xb));
-        e && e["style"]["display"] !== "none" ? this["hud"]["closeCase"]() : this["hud"]["pauseMode"] ? this["hud"]["closePauseMenu"]() : this["hud"]["buyOpen"] ? this["hud"]["buyBack"]() || this["hud"]["closeBuy"]() : this["hud"]["howToOpen"] ? this["hud"]["closeHowTo"]() : this["hud"]["escPauseOpen"] ? (this["hud"]["hidePause"](), this["resume"](!0x1)) : (this["input"]["unlock"](), this["hud"]["showPause"]())
+        e && e["style"]["display"] !== "none" ? this["hud"]["closeCase"]() : this["hud"]["pauseMode"] ? this["hud"]["closePauseMenu"]() : this["hud"]["buyOpen"] ? this["hud"]["buyBack"]() || this["hud"]["closeBuy"]() : this["hud"]["howToOpen"] ? this["hud"]["closeHowTo"]() : this["hud"]["escPauseOpen"] ? (this["hud"]["hidePause"](), this["hud"]["showRelockHint"](), this["resume"](!0x1)) : (this["input"]["unlock"](), this["hud"]["showPause"]())
       }
       if (this["input"]["wasPressedA"]("cases") && !this["hud"]["pauseMode"] && (this["input"]["unlock"](), setTimeout(() => {
           // the old cases tab is retired: the new menu's store view covers it
