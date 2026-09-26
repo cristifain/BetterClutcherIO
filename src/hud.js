@@ -2460,7 +2460,12 @@ var Nv = class e {
     let creds = () => JSON.stringify({ username: ui.value.trim(), password: pi.value, confirm: p2.value });
     let post = path => async () => {
       st.textContent = "...";
-      let r = await call(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: creds() });
+      let r = null;
+      try {
+        r = await call(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: creds() });
+      } catch (e) {
+        return showForm("COULD NOT REACH THE SERVER");
+      }
       if (r.ok && r.j && r.j.token) {
         setToken(r.j.token), showIn({ username: r.j.inv ? r.j.inv.username : r.j.username, tokens: r.j.inv ? r.j.inv.tokens : 0 });
         this["_loadInv"]();
@@ -2576,21 +2581,28 @@ var Nv = class e {
     ov.querySelector("#agSwitch").onclick = () => setMode("login");
     let submit = async () => {
       st.textContent = "...";
-      let r = await fetch(WS_BASE.replace("wss://", "https://") + "/auth/" + mode, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: ui.value.trim(), password: pi.value, confirm: p2.value })
-      });
       let j = null;
-      try { j = await r.json() } catch {}
-      if (r.ok && j && j.token) {
-        try { localStorage.setItem("clutcher_auth_token", j.token) } catch {}
-        ov.classList.remove("show"), st.textContent = "";
-        await this["_loadInv"]();
-        let f = this["_authResume"];
-        this["_authResume"] = null;
-        f && f();
-      } else st.textContent = "FAILED: " + (j && j.error || "no response");
+      try {
+        let r = await fetch(WS_BASE.replace("wss://", "https://") + "/auth/" + mode, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: ui.value.trim(), password: pi.value, confirm: p2.value })
+        });
+        j = await r.json();
+        if (r.ok && j && j.token) {
+          try { localStorage.setItem("clutcher_auth_token", j.token) } catch {}
+          ov.classList.remove("show"), st.textContent = "";
+          await this["_loadInv"]();
+          let f = this["_authResume"];
+          this["_authResume"] = null;
+          f && f();
+          return
+        }
+      } catch (e) {
+        st.textContent = "COULD NOT REACH THE SERVER" + (e && e.message ? " (" + e.message + ")" : "");
+        return
+      }
+      st.textContent = "FAILED: " + (j && j.error || "no response");
     };
     ov.querySelector("#agGo").onclick = submit;
   } ["_marketApi"](path, body) {
