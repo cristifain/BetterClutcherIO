@@ -208,6 +208,8 @@ window.__cs2UiScale = function () {
     border: 1px solid #4a4f55; }
 
   #caseopen.reveal3d { background: transparent !important; -webkit-backdrop-filter: none; backdrop-filter: none; }
+  /* gray backdrop while the win card is up (stays until open-again/close) */
+  #caseopen.reveal3d { background: rgba(125, 131, 140, 0.45) !important; }
   #caseopen.reveal3d #co-open, #caseopen.reveal3d #co-title { visibility: hidden; }
   #menu.rv3dmode #discordcard,
   #menu.rv3dmode #tab-cases, #menu.rv3dmode #tab-locker, #menu.rv3dmode #topnav, #menu.rv3dmode #menufoot,

@@ -28601,7 +28601,7 @@ window["game"] = new class {
     this["postfx"]["addOverlay"](() => {
       return h() ? [this["viewmodel"]["scene"], this["viewmodel"]["camera"]] : null
     }), this["postfx"]["addOverlay"](() => {
-      return this["state"] === "playing" && (this["_skinView"] || this["_buyPreview"] || this["_caseView"]) ? [this["previewScene"], this["previewCam"]] : null
+      return (this["state"] === "playing" || this["hud"] && this["hud"]["caseOpen"] && this["hud"]["caseOpen"]()) && (this["_skinView"] || this["_buyPreview"] || this["_caseView"]) ? [this["previewScene"], this["previewCam"]] : null
     }), this["postfx"]["finalize"](), this["_syncPost"](), this["_aaBase"] = this["postfx"]["composer"]["renderTarget1"]["samples"] > 0x0 ? "msaa" : this["postfx"]["fxaa"] ? "fxaa" : "off", this["_applyPresetPasses"](this["quality"]), this["syncOwnKnife"](), this["hud"]["showMenu"](), this["loadInspectScene"]()["catch"](() => {}), this["last"] = performance["now"](), requestAnimationFrame(this["tick"]), this["_menuWarm"]();
     let g = new URLSearchParams(location["search"]);
     if (g["has"]("auto")) {

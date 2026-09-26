@@ -2617,9 +2617,11 @@ var Nv = class e {
       this["_inv"] = j.inv, H["hydrateServer"](j.inv), this["_syncMenuTokens"]();
       let n = ps[j.reward.id];
       if (!n) return;
-      // item instance for the reveal + locker; duplicates reuse the owned one
-      let r = j.reward.duplicate ? (H["data"]["items"] || []).find(it => it.skin === j.reward.id) : null;
-      r = r || H["add"](n, { wear: (n.wmin + n.wmax) / 2, st: !0x1, seed: 0x0 });
+      // item instance for the reveal + locker: hydrateServer already created
+      // one from the server's authoritative list (new AND duplicate rewards)
+      // - reuse it, and only fall back to a fresh instance if it's missing
+      let r = (H["data"]["items"] || []).find(it => it.skin === j.reward.id)
+        || H["add"](n, { wear: (n.wmin + n.wmax) / 2, st: !0x1, seed: 0x0 });
       let def = MARKET_CASES.find(c => c.id === crate) || { id: crate, name: crate };
       // The animation overlay (#caseopen) lives inside #menu, which is nested
       // in #hud (z-index 10) - the menu-root shell (z-index 90) renders on top
@@ -2630,12 +2632,18 @@ var Nv = class e {
       this["menuEl"]["style"]["zIndex"] = "300";
       let hudEl = document.getElementById("hud");
       hudEl && (hudEl.style.zIndex = "500");
+      // hide the menu shell during the animation - otherwise it covers the
+      // game canvas the 3D reveal renders on
+      let mr = document.getElementById("menu-root");
+      mr && (mr.style.visibility = "hidden");
       if (!this["_closeCaseWrapped"]) {
         this["_closeCaseWrapped"] = !0x0;
         let orig = this["closeCase"];
         this["closeCase"] = function () {
           let h = document.getElementById("hud");
           h && (h.style.zIndex = "");
+          let m2 = document.getElementById("menu-root");
+          m2 && (m2.style.visibility = "");
           let out = orig.apply(this, arguments);
           try { this["renderLocker"](), this["renderMarket"](); } catch {}
           return out
