@@ -6,7 +6,7 @@
 // ============================================================================
 
 // ---- backend (already deployed) ----
-export var WS_BASE = "wss://betterclutcher-server.cfain.workers.dev";
+export var WS_BASE = "http://127.0.0.1:8787"; // TEMP TEST - revert to wss://betterclutcher-server.cfain.workers.dev
 
 // ---- capacity ----
 export var MAX_ROOMS = 11;        // concurrent online matches (change here only)

@@ -18,9 +18,12 @@ var byId = id => {
   return null
 };
 
+// Full crate definitions (items + odds data included): the case-opening
+// animation needs the whole def (reel filler, rarities), while the server
+// remains the roll authority. iconUrl is the crate's shop image.
 export var MARKET_CASES = ["crate_valve_1", "crate_esports_2013", "crate_valve_2"]
   .map(id => byId(id))
   .filter(Boolean)
-  .map(c => ({ id: c.id, name: c.name, icon: "ui/cases/" + c.icon + ".webp" }));
+  .map(c => Object.assign({}, c, { iconUrl: "ui/cases/" + c.icon + ".webp" }));
 
 export var UNIKEY = { id: "unikey", name: "Universal Key", icon: "ui/cases/unikey.png", price: MARKET_PRICE };

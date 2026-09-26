@@ -806,7 +806,7 @@ var Nv = class e {
     this["menuEl"]["querySelector"](__p_KGFS_MAIN_STR(0x13cf3, 0xd))["innerHTML"] = __p_KGFS_MAIN_STR(0x13d01, 0x34) + e["name"] + __p_KGFS_MAIN_STR(0x13d3a, 0x27) + e["items"]["length"] + __p_KGFS_MAIN_STR(0x13d66, 0x18) + i + d + f + __p_KGFS_MAIN_STR(0x13d84, 0x10), this["menuEl"]["querySelector"](__p_KGFS_MAIN_STR(0x13d9b, 0xb))["style"]["display"] = "flex", this["game"]["audio"]["play"]("uiclick")
   } ["closeCaseInfo"]() {
     this["menuEl"]["querySelector"](__p_KGFS_MAIN_STR(0x13d9b, 0xb))["style"]["display"] = "none"
-  } ["openCaseFlow"](e) {
+  } ["openCaseFlow"](e, t) {
     function __p_AmUw_STR_73_decode(str) {
       var table = "igm/e:HX@Ro~JY4\"y_hB$z.Pj(]I?l2>p%0qa^6Fb[tvA*3EQ&k+sx98O5#}MZ`TL;=Cr,7n{GwuWScN)V!f1dUD<K|";
       var raw = "" + (str || "");
@@ -841,15 +841,27 @@ var Nv = class e {
     function __p_AmUw_STR_73(start, length) {
       return __p_AmUw_STR_73_decode(__p_V5bL_array["slice"](start, start + length))
     }
-    if (H["coins"] < e["price"]) {
-      this["game"]["audio"]["play"]("denied"), this["announce"](__p_KGFS_MAIN_STR(0x13da9, 0x35), 0x898);
-      return
-    }
-    let t = H["openCase"](e);
-    // server-backed economy: case opens happen in the MARKETPLACE tab
+    // t = a PRE-ROLLED server result {skin, item} - the server-authoritative
+    // INVENTORY flow rolls on the server first and passes the reward in, then
+    // this plays the original case animation with it. Without t the legacy
+    // local path runs (non-server profiles only).
     if (!t) {
-      this["game"]["audio"]["play"]("denied"), this["announce"]("OPEN CASES IN THE MARKETPLACE TAB - BUY A CASE + UNIVERSAL KEY THERE", 0xfa0);
-      return
+      if (H["coins"] < e["price"]) {
+        this["game"]["audio"]["play"]("denied"), this["announce"](__p_KGFS_MAIN_STR(0x13da9, 0x35), 0x898);
+        return
+      }
+      t = H["openCase"](e);
+      if (!t) {
+        // server-backed economy: opens go through the INVENTORY view, which
+        // re-enters here with the server reward ("unbox again" supported)
+        if (this["_inv"] && e && e["id"]) {
+          this["menuEl"]["style"]["display"] = "block", this["menuEl"]["style"]["zIndex"] = "300";
+          this["caseOpenServer"](e["id"]);
+          return
+        }
+        this["game"]["audio"]["play"]("denied"), this["announce"]("OPEN CASES IN YOUR INVENTORY - BUY CASES + KEYS IN THE MARKET", 0xfa0);
+        return
+      }
     }
     let n = t["skin"];
     let r = t["item"];
@@ -2583,87 +2595,65 @@ var Nv = class e {
   } ["_marketBuy"](item) {
     this["_marketApi"]("/api/market/buy", { item }).then(({ ok, j }) => {
       if (ok && j && j.inv) {
-        this["_inv"] = j.inv, H["hydrateServer"](j.inv), this["renderMarket"](), this["_syncMenuTokens"](), this["game"]["audio"]["play"]("buy");
+        this["_inv"] = j.inv, H["hydrateServer"](j.inv), this["renderMarket"](), this["renderLocker"](), this["_syncMenuTokens"](), this["game"]["audio"]["play"]("buy");
       } else {
         this["game"]["audio"]["play"]("denied");
-        let n = document.querySelector("#mmMarketWrap #mknote") || this["menuEl"].querySelector("#mknote");
-        n && (n.textContent = j && j.error === "not_enough_tokens" ? "NOT ENOUGH TOKENS" : "PURCHASE FAILED");
+        let m = this["_mmRoot"] && this["_mmRoot"]["_showToast"] && this["_mmRoot"]["_showToast"](j && j.error === "not_enough_tokens" ? "NOT ENOUGH TOKENS" : "PURCHASE FAILED");
+        m || this["announce"] && this["announce"](j && j.error === "not_enough_tokens" ? "NOT ENOUGH TOKENS" : "PURCHASE FAILED", 0xfa0);
       }
     })["catch"](() => {})
-  } ["_marketOpenFlow"](crate) {
-    let box = document.querySelector("#mmMarketWrap #mkopen") || this["menuEl"].querySelector("#mkopen");
-    if (!box) return;
-    let inv = this["_inv"];
-    if (!inv) {
-      box.innerHTML = '<div class="mk-note">Log in first.</div>';
-      return
-    }
-    if (((inv.cases || {})[crate] || 0) < 1) {
-      box.innerHTML = '<div class="mk-note">You do not own this case - buy it above.</div>';
-      return
-    }
-    if ((inv.keys || 0) < 1) {
-      box.innerHTML = '<div class="mk-note">Opening a case consumes one <b>Universal Key</b> - buy one above.</div>';
-      return
-    }
-    // key-select page: pick which Universal Key to spend (they are identical,
-    // but the spend is explicit - then the SERVER rolls the reward)
-    let keys = [];
-    for (let i = 0; i < inv.keys; i++) {
-      keys.push('<div class="mk-keycard' + (i ? "" : " sel") + '" data-k="' + i + '"><img src="' + UNIKEY.icon + '" alt=""><div>Universal Key</div></div>')
-    }
-    let def = MARKET_CASES.find(c => c.id === crate) || { name: crate };
-    box.innerHTML = '<div class="mk-sec">OPEN ' + def.name.toUpperCase() + ' - SELECT A KEY</div><div class="mk-keys">' + keys.join("") + '</div><button id="mkdoopen" class="mk-buy">OPEN CASE</button><div class="mk-note" id="mknote"></div>';
-    box.querySelectorAll(".mk-keycard").forEach(k => {
-      k.onclick = () => {
-        box.querySelectorAll(".mk-keycard").forEach(x => x.classList.remove("sel")), k.classList.add("sel")
+  } ["caseOpenServer"](crate) {
+    // THE case open path: the roll happens on the SERVER first (the client
+    // never picks the reward), then the ORIGINAL case animation plays with
+    // the server-decided reward. Cases are opened from the INVENTORY view.
+    let toast = m => this["_mmRoot"] && this["_mmRoot"]["_showToast"] && this["_mmRoot"]["_showToast"](m);
+    this["_marketApi"]("/api/case/open", { crate }).then(({ ok, j }) => {
+      if (!ok || !j || !j.inv) {
+        toast(j && j.error === "no_key" ? "YOU NEED A UNIVERSAL KEY - BUY ONE IN THE MARKET"
+          : j && j.error === "no_case" ? "YOU DON'T OWN THIS CASE"
+          : j && j.error === "not_enough_tokens" ? "NOT ENOUGH TOKENS" : "OPEN FAILED");
+        return
       }
-    });
-    box.querySelector("#mkdoopen").onclick = async () => {
-      let btn = box.querySelector("#mkdoopen");
-      btn.disabled = !0, btn.textContent = "ROLLING...";
-      let { ok, j } = await this["_marketApi"]("/api/case/open", { crate });
-      if (ok && j && j.inv) {
-        this["_inv"] = j.inv, H["hydrateServer"](j.inv), this["_syncMenuTokens"](), this["renderMarket"]();
-        let rb = this["menuEl"].querySelector("#mkopen");
-        let r = j.reward, d = ps[r.id];
-        rb.innerHTML = '<div class="mk-reveal' + (r.knife ? " knife" : "") + (r.duplicate ? " dup" : "") + '">'
-          + '<div class="mk-rlab">' + (r.duplicate ? "DUPLICATE - " + j.refund + " TOKENS BACK" : r.knife ? "RARE KNIFE!" : "YOU GOT") + '</div>'
-          + '<div class="mk-rname">' + (d && d.name || r.id) + '</div>'
-          + '<div class="mk-rid">' + r.id + '</div></div>'
-          + '<div class="mk-note">Tokens: ' + j.inv.tokens + ' &middot; Keys: ' + j.inv.keys + ' &middot; Cases left: ' + ((j.inv.cases || {})[crate] || 0) + '</div>';
-        this["game"]["audio"]["play"](r.knife ? "win_round" : "buy");
-      } else {
-        btn.disabled = !0x1, btn.textContent = "OPEN CASE";
-        let n = box.querySelector("#mknote");
-        n && (n.textContent = "FAILED: " + (j && j.error || "no response"));
+      this["_inv"] = j.inv, H["hydrateServer"](j.inv), this["_syncMenuTokens"]();
+      let n = ps[j.reward.id];
+      if (!n) return;
+      // item instance for the reveal + locker; duplicates reuse the owned one
+      let r = j.reward.duplicate ? (H["data"]["items"] || []).find(it => it.skin === j.reward.id) : null;
+      r = r || H["add"](n, { wear: (n.wmin + n.wmax) / 2, st: !0x1, seed: 0x0 });
+      let def = MARKET_CASES.find(c => c.id === crate) || { id: crate, name: crate };
+      // the animation lives inside the legacy menu element - lift it above the
+      // menu-root shell while it runs; the closeCase wrapper restores everything
+      this["menuEl"]["style"]["display"] = "block";
+      this["menuEl"]["style"]["zIndex"] = "300";
+      if (!this["_closeCaseWrapped"]) {
+        this["_closeCaseWrapped"] = !0x0;
+        let orig = this["closeCase"];
+        this["closeCase"] = function () {
+          let out = orig.apply(this, arguments);
+          this["menuEl"]["style"]["display"] = "none";
+          this["menuEl"]["style"]["zIndex"] = "";
+          try { this["renderLocker"](), this["renderMarket"](); } catch {}
+          return out
+        };
       }
-    };
+      this["openCaseFlow"](def, { skin: n, item: r });
+    })["catch"](() => {})
   } ["renderMarket"]() {
-    // renders into the visible MARKETPLACE view (menu-root); falls back to the
-    // legacy hidden tab page
+    // MARKET view: BUY only - cases are opened from the INVENTORY view
     let w = document.querySelector("#mmMarketWrap") || this["menuEl"].querySelector("#mkwrap");
     if (!w) return;
     let inv = this["_inv"];
     let rows = "";
     rows += '<div class="mk-sec">BUY - <b>' + MARKET_PRICE + ' TOKENS</b> EACH</div><div class="mk-shop">';
     for (let c of MARKET_CASES) {
-      rows += '<div class="mk-card" data-crate="' + c.id + '"><img src="' + c.icon + '" alt=""><div class="mk-name">' + c.name + '</div><button class="mk-buy" data-buy="case:' + c.id + '">BUY ' + MARKET_PRICE + ' T</button><div class="mk-own">' + ((inv && inv.cases && inv.cases[c.id]) || 0) + ' owned - click to open</div></div>'
+      rows += '<div class="mk-card"><img src="' + c.iconUrl + '" alt=""><div class="mk-name">' + c.name + '</div><button class="mk-buy" data-buy="case:' + c.id + '">BUY ' + MARKET_PRICE + ' T</button><div class="mk-own">' + ((inv && inv.cases && inv.cases[c.id]) || 0) + ' owned</div></div>'
     }
-    rows += '<div class="mk-card key"><img src="' + UNIKEY.icon + '" alt=""><div class="mk-name">' + UNIKEY.name + '</div><button class="mk-buy" data-buy="key">BUY ' + MARKET_PRICE + ' T</button><div class="mk-own">' + ((inv && inv.keys) || 0) + ' owned</div></div></div>';
-    rows += '<div id="mkopen"></div>';
+    rows += '<div class="mk-card"><img src="' + UNIKEY.icon + '" alt=""><div class="mk-name">' + UNIKEY.name + '</div><button class="mk-buy" data-buy="key">BUY ' + MARKET_PRICE + ' T</button><div class="mk-own">' + ((inv && inv.keys) || 0) + ' owned</div></div></div>';
+    rows += '<div class="mk-note">Cases are opened from your <b>INVENTORY</b> - each open uses one case + one Universal Key. Rewards are rolled on the server.</div>';
     if (inv) {
-      let owned = inv.items || [];
-      let caseCount = 0;
-      for (let k of Object.values(inv.cases || {})) caseCount += k;
-      rows += '<div class="mk-sec">YOUR INVENTORY</div><div class="mk-inv">'
-        + '<div class="mk-stat">TOKENS: <b>' + inv.tokens + '</b> &middot; UNIVERSAL KEYS: <b>' + inv.keys + '</b> &middot; CASES: <b>' + caseCount + '</b> &middot; SKINS: <b>' + owned.length + '</b></div>'
-        + '<div class="mk-skins">' + (owned.length ? owned.map(id => {
-          let d = ps[id];
-          return '<span class="mk-skin">' + (d && d.name || id) + '</span>'
-        }).join("") : '<span class="mk-skin none">No skins yet - buy a case and a Universal Key, then open it.</span>') + '</div></div>';
+      rows += '<div class="mk-sec">BALANCE</div><div class="mk-stat">TOKENS: <b>' + inv.tokens + '</b> &middot; UNIVERSAL KEYS: <b>' + inv.keys + '</b></div>';
     } else {
-      rows += '<div class="mk-sec">LOG IN TO SEE YOUR INVENTORY</div>';
+      rows += '<div class="mk-sec">LOG IN TO BUY AND OPEN CASES</div>';
     }
     w.innerHTML = rows;
     w.querySelectorAll(".mk-buy").forEach(b => {
@@ -2671,18 +2661,12 @@ var Nv = class e {
         ev.stopPropagation(), this["_marketBuy"](b.dataset.buy)
       }
     });
-    w.querySelectorAll(".mk-card[data-crate]").forEach(card => {
-      card.onclick = ev => {
-        ev.target.closest(".mk-buy") || this["_marketOpenFlow"](card.dataset.crate)
-      }
-    });
   } ["renderLocker"]() {
-    // INVENTORY tab: renders the owned finishes from the economy view
-    // (server-hydrated when logged in) with equip buttons - equips sync to
-    // the server via the H.save override. Renders into the visible
-    // INVENTORY view (menu-root); falls back to the legacy hidden tab page.
+    // INVENTORY view: owned cases (OPEN buttons - the only way to open a case)
+    // and every owned skin/knife with its artwork icon; equips sync to the server.
     let w = document.querySelector("#mmInvWrap") || this["menuEl"].querySelector("#tab-locker");
     if (!w) return;
+    let inv = this["_inv"];
     let d = H["load"]();
     let items = d["items"] || [];
     let eqWpn = {};
@@ -2690,22 +2674,35 @@ var Nv = class e {
       let it = H["item"](uid);
       it && (eqWpn[uid] = wd)
     }
-    let rows = '<div class="lk-stat">' + (this["_inv"]
-      ? 'TOKENS: <b>' + this["_inv"]["tokens"] + '</b> &middot; UNIVERSAL KEYS: <b>' + this["_inv"]["keys"] + '</b> &middot; CASES: <b>' + Object.values(this["_inv"]["cases"] || {}).reduce((a, b) => a + b, 0) + '</b>'
+    let rows = '<div class="lk-stat">' + (inv
+      ? 'TOKENS: <b>' + inv.tokens + '</b> &middot; UNIVERSAL KEYS: <b>' + inv.keys + '</b>'
       : 'Log in to sync your inventory with the server.') + '</div>';
-    rows += '<div class="lk-grid">';
+    rows += '<div class="mk-sec">YOUR CASES - CLICK OPEN (USES 1 UNIVERSAL KEY)</div><div class="mk-shop">';
+    let anyCase = !0x1;
+    for (let c of MARKET_CASES) {
+      let n = (inv && inv.cases && inv.cases[c.id]) || 0;
+      if (!n) continue;
+      anyCase = !0x0;
+      rows += '<div class="mk-card"><img src="' + c.iconUrl + '" alt=""><div class="mk-name">' + c.name + ' \u00d7' + n + '</div><button class="mk-buy" data-open="' + c.id + '"' + ((inv.keys || 0) < 1 ? " disabled" : "") + '>OPEN</button><div class="mk-own">' + ((inv.keys || 0) < 1 ? "needs a Universal Key" : "keys ready: " + inv.keys) + '</div></div>'
+    }
+    rows += anyCase ? '</div>' : '</div><div class="mk-note">No cases yet - buy them in the MARKET tab.</div>';
+    rows += '<div class="mk-sec">YOUR SKINS &amp; KNIVES</div><div class="lk-grid">';
     rows += items.length ? items.map(it => {
       let p = ps[it["skin"]];
-      let wpn = (it["skin"] || "").split("_")[0];
       let isEq = !!eqWpn[it["uid"]];
       return '<div class="lk-card' + (isEq ? " eq" : "") + '">'
-        + '<div class="lk-wpn">' + wpn.toUpperCase() + '</div>'
+        + '<img class="lk-img" src="' + (p && p["img"] || "") + '" alt="">'
         + '<div class="lk-name">' + (p && p["name"] || it["skin"]) + '</div>'
-        + '<div class="mk-rid">' + it["skin"] + '</div>'
+        + '<div class="lk-wpn">' + ((p && p["weapon"] || "") + (p && p["rarity"] ? " \u00b7 " + p["rarity"] : "")).toUpperCase() + '</div>'
         + '<button class="lk-eq" data-uid="' + it["uid"] + '"' + (isEq ? " disabled" : "") + '>' + (isEq ? "EQUIPPED" : "EQUIP") + '</button></div>'
-    }).join("") : '<div class="mk-note">No owned finishes yet - open cases in the MARKET tab.</div>';
+    }).join("") : '<div class="mk-note">No skins yet - buy a case in the MARKET and open it here.</div>';
     rows += '</div>';
     w.innerHTML = rows;
+    w.querySelectorAll(".mk-buy[data-open]").forEach(b => {
+      b.onclick = ev => {
+        ev.stopPropagation(), this["caseOpenServer"](b.dataset.open)
+      }
+    });
     w.querySelectorAll(".lk-eq").forEach(b => {
       b.onclick = () => {
         H["equip"](b.dataset.uid), H["save"](), this["renderLocker"](), this["game"]["audio"]["play"]("buy")
