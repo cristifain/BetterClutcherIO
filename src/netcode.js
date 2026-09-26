@@ -4,6 +4,8 @@ import {
   WS_BASE,
   MAX_HISTORY_MS,
   SEND_MS,
+  MAX_UP_SPEED,
+  MAX_DOWN_SPEED,
   isNum,
   angDiff,
   clamp,
@@ -61,11 +63,28 @@ var mmMap = "dusker";
 
 var qmResolve = null;
 var qmReject = null;
+// socket generation: bumped in openSocket(); handlers capture their own
+// generation and ignore their late events once a newer socket exists
+var connGen = 0;
+
+// settles the pending quickmatch promise exactly once (success -> resolve
+// with roomId, failure -> reject). Every terminal path calls this so the
+// caller awaiting requestMatch() (hud.js:1930) is never left hanging.
+function settleQuick(err) {
+  if (!qmResolve && !qmReject) return;
+  let rs = qmResolve, rj = qmReject;
+  qmResolve = qmReject = null;
+  if (err && rj) rj(err);
+  else if (rs) rs(roomId);
+}
 
 export function requestMatch(map) {
   mmMap = map || mmMap;
   setOnline(!0);
   return new Promise((resolve, reject) => {
+    // a second requestMatch while one is pending (double-click, retry races)
+    // must not orphan the old promise - hud.js awaits it with .catch
+    settleQuick(new Error("superseded by a new match request"));
     qmResolve = resolve, qmReject = reject;
     try {
       console.log("[net] quickmatch map=" + mmMap)
@@ -85,21 +104,29 @@ function connectRoom(room) {
 function openSocket(url, room) {
   roomId = room || roomId;
   intentionalClose = !1;
+  // the old socket's close/message events still fire after this line (close()
+  // is async) - every handler below is bound to this generation and ignores
+  // itself once a newer socket exists, so a stale event can never tear down
+  // the new connection's state (loops, remotes, connected flag)
+  const gen = ++connGen;
   try {
     ws && ws.close()
   } catch {}
   ws = new WebSocket(url);
   ws.onopen = () => {
+    if (gen !== connGen) return;
     try {
       console.log("[net] socket open " + url)
     } catch {}
   };
   ws.onmessage = e => {
+    if (gen !== connGen) return; // the old room's messages must not leak in
     try {
       handleMsg(JSON.parse(e.data))
     } catch {}
   };
   ws.onclose = e => {
+    if (gen !== connGen) return;
     try {
       console.warn("[net] socket close code=" + e.code + " reason=" + (e.reason || ""))
     } catch {}
@@ -118,11 +145,9 @@ function openSocket(url, room) {
       // quickmatch never completed: retry it (the room id is unknown)
       if (reconnects++ < 3) {
         setTimeout(() => connectQuick(mmMap), 600 * reconnects)
-      } else if (qmReject) {
-        let rj = qmReject;
-        qmResolve = qmReject = null;
+      } else {
         setOnline(!1);
-        rj(new Error("could not reach matchmaker"))
+        settleQuick(new Error("could not reach matchmaker"))
       }
       return
     }
@@ -131,7 +156,10 @@ function openSocket(url, room) {
     } else if (was) {
       setTimeout(() => requestMatch(mmMap)["catch"](() => setOnline(!1)), 1000)
     } else {
-      setOnline(!1)
+      // out of retries and never connected: fail the pending quickmatch
+      // promise instead of leaving it hanging forever
+      setOnline(!1);
+      settleQuick(new Error("could not reach matchmaker"))
     }
   };
   ws.onerror = () => {};
@@ -172,11 +200,7 @@ function handleMsg(m) {
         console.log("[net] welcome id=" + myId + " room=" + roomId + " players=" + (m.players || []).length)
       } catch {}
       
-      if (qmResolve) {
-        let rs = qmResolve;
-        qmResolve = qmReject = null;
-        rs(roomId)
-      }
+      settleQuick();
       
       onlineMatch = !0;
       try {
@@ -288,10 +312,13 @@ function handleMsg(m) {
       } catch {}
       connected = !1, ws = null, stopLoops();
       if (fullRetries++ < 5) {
-        setTimeout(() => requestMatch()["catch"](() => setOnline(!1)), 400 * fullRetries)
+        // retry the socket directly: requestMatch() would orphan the pending
+        // promise the original caller is still awaiting
+        setTimeout(() => connectQuick(mmMap), 400 * fullRetries)
       } else {
         setOnline(!1);
-        flagSuspicious(myId, "matchmaker full, giving up")
+        flagSuspicious(myId, "matchmaker full, giving up");
+        settleQuick(new Error("matchmaker full"))
       }
       break
     }
@@ -344,7 +371,8 @@ function frame(now) {
   let dt = lastFrame ? Math.min(.1, (now - lastFrame) / 1000) : .016;
   lastFrame = now;
   if (!connected) return;
-  // interpolate every remote toward its latest sub-tick target (~15 u/s)
+  // interpolate every remote toward its latest sub-tick target (~15 u/s
+  // horizontal; vertical uses the physics caps, see MAX_UP/DOWN_SPEED)
   for (let [rid, r] of remotes) {
     let d = Math.hypot(r.tx - r.x, r.ty - r.y, r.tz - r.z);
     if (d > 8) {
@@ -353,8 +381,13 @@ function frame(now) {
     } else {
       let step = 15 * dt;
       r.x = moveToward(r.x, r.tx, step);
-      r.y = moveToward(r.y, r.ty, step);
       r.z = moveToward(r.z, r.tz, step);
+      // vertical: with no terminal velocity a fall reaches ~36-55 u/s, far
+      // above the 15 u/s horizontal rate - interpolating y at that rate
+      // renders falls in slow motion until the 8-unit snap fires. The server
+      // validates ascent/descent against these same caps, so no legit
+      // movement can outrun the interpolation.
+      r.y = moveToward(r.y, r.ty, (r.ty < r.y ? MAX_DOWN_SPEED : MAX_UP_SPEED) * dt);
       r.ry += clamp(angDiff(r.ry, r.ttry), -8 * dt, 8 * dt) // yaw wrap-around safe
     }
     try {
@@ -408,6 +441,7 @@ export function disconnectOnline() {
   ws = null, connected = !1, myId = null;
   stopLoops();
   setOnline(!1);
+  settleQuick(new Error("left online mode"))
 }
 
 // ---- single entry point ----

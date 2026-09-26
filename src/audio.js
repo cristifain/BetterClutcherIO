@@ -1,11 +1,4 @@
-// Audio engine, split verbatim from main.js (no logic changes).
-// Contains the Br audio manager class (WebAudio context, manifest-driven sound
-// bank, positional voices/pools, buses + compressor, tinnitus/shockwave
-// envelopes) and its module-level helpers: Nr (manifest url), Pr, Fr (preload
-// prefixes), Ir (sound alias table), Lr (curve interpolation), Rr (voice
-// release), zr (buffer start offset), plus the footstep sound mapping Di/ki/Ai.
-// Engine-side bindings are imported from main.js (circular import is safe: all
-// main.js bindings are referenced only at runtime, never during module evaluation).
+// Audio engine
 import { c as lt, l as dt } from "./data-BdgATJBp.js";
 import { $ as e, A as t, At as n, B as r } from "./three-B50Y55N1.js";
 import { __p_KGFS_MAIN_STR, __p_V5bL_array, __p_nino_bufferToString } from "./decode.js";
