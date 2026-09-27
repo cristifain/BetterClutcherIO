@@ -10,3 +10,4 @@ main.js - 32,519 lines as of now
 
 This project was made and created using AI generative content in the original game, especially the systems. that means we will keep using AI as of now during development
 
+https://cristifain.github.io/BetterClutcherIO/
