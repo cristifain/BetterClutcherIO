@@ -823,7 +823,7 @@ var $h = class e {
       let [t, i, a] = Dg(y, b, x, -e["yaw"] * nh, -e["pitch"] * nh);
       let o = Ea(this["_acc"], E, this["_accState"]());
       let s = Sa(E["bullets"], !0x1) || r["pellets"] || 0x1;
-      let c = ka(E["spreadSeed"] ? E["spreadSeed"] : Math["random"]() * 0x7fffffff | 0x0, o, Sa(E["spread"], this["zoom"] > 0x0), s, {
+      let c = ka(E["spreadSeed"] ? (E["spreadSeed"] + (this["_punch"]["index"] | 0x0)) | 0x0 : Math["random"]() * 0x7fffffff | 0x0, o, Sa(E["spread"], this["zoom"] > 0x0), s, {
         ["negev"]: r["id"] === "negev",
         ["recoilIndex"]: this["_punch"]["index"] | 0x0
       });
