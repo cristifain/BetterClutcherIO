@@ -60,8 +60,8 @@ export function updateCrosshair(hud) {
   let p = 0x0;
   let m = 0x0;
   if (e["chFollow"]) {
-    let e = (r["punchP"] || 0x0) * .0174533 - (r["shkP"] || 0x0);
-    let t = (r["punchY"] || 0x0) * .0174533 - (r["shkY"] || 0x0);
+    let e = ((r["punchP"] || 0x0) - (r["vpP"] || 0x0)) * .0174533 - (r["shkP"] || 0x0);
+    let t = ((r["punchY"] || 0x0) - (r["vpY"] || 0x0)) * .0174533 - (r["shkY"] || 0x0);
     p = Math["tan"](t) * i, m = -Math["tan"](e) * i
   }
   if (p !== hud["_chX"] || m !== hud["_chY"]) {

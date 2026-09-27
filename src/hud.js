@@ -722,7 +722,7 @@ var Nv = class e {
       this["closeCase"](), e && this["openCaseFlow"](e)
     }, this["renderBinds"](), this["renderCases"](), this["refreshMenuChrome"]()
   } ["playerName"]() {
-    // the account username is the identity; fall back for pre-account profiles
+    
     return this["_inv"] && this["_inv"]["username"] || localStorage.getItem("clutcher_name") || "Player"
   } ["refreshMenuChrome"]() {
     let e = this["playerName"]();
@@ -838,10 +838,7 @@ var Nv = class e {
     function __p_AmUw_STR_73(start, length) {
       return __p_AmUw_STR_73_decode(__p_V5bL_array["slice"](start, start + length))
     }
-    // t = a PRE-ROLLED server result {skin, item} - the server-authoritative
-    // INVENTORY flow rolls on the server first and passes the reward in, then
-    // this plays the original case animation with it. Without t the legacy
-    // local path runs (non-server profiles only).
+    
     if (!t) {
       if (H["coins"] < e["price"]) {
         this["game"]["audio"]["play"]("denied"), this["announce"](__p_KGFS_MAIN_STR(0x13da9, 0x35), 0x898);
@@ -849,8 +846,7 @@ var Nv = class e {
       }
       t = H["openCase"](e);
       if (!t) {
-        // server-backed economy: opens go through the INVENTORY view, which
-        // re-enters here with the server reward ("unbox again" supported)
+        
         if (this["_inv"] && e && e["id"]) {
           this["menuEl"]["style"]["display"] = "block", this["menuEl"]["style"]["zIndex"] = "300";
           this["caseOpenServer"](e["id"]);
